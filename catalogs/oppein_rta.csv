@@ -1,0 +1,92 @@
+sku,category,description,width_in,height_in,depth_in,price,notes
+B12,base,"Base cabinet, 1 drawer + 1 door, 12""W",12,30.0,23.88,270.0,
+B15,base,"Base cabinet, 1 drawer + 1 door, 15""W",15,30.0,23.88,295.0,
+B18,base,"Base cabinet, 1 drawer + 1 door, 18""W",18,30.0,23.88,320.0,
+B21,base,"Base cabinet, 1 drawer + 1 door, 21""W",21,30.0,23.88,344.0,
+BTC18,base,"Base trash cabinet 18""W (order BTC18-TRASH CAN hardware)",18,30.0,23.88,644.0,Includes trash can
+B24,base,"Base cabinet, 1 drawer + 2 doors, 24""W",24,30.0,23.88,383.0,
+B27,base,"Base cabinet, 1 drawer + 2 doors, 27""W",27,30.0,23.88,408.0,
+B30,base,"Base cabinet, 1 drawer + 2 doors, 30""W",30,30.0,23.88,433.0,
+B33,base,"Base cabinet, 1 drawer + 2 doors, 33""W",33,30.0,23.88,459.0,
+B36,base,"Base cabinet, 1 drawer + 2 doors, 36""W",36,30.0,23.88,486.0,
+B42,base,"Base cabinet, 1 drawer + 2 doors, 42""W",42,30.0,23.88,536.0,
+SB30,base,"Sink base, false drawer front + 2 doors, 30""W",30,30.0,23.88,290.0,
+SB33,base,"Sink base, false drawer front + 2 doors, 33""W",33,30.0,23.88,308.0,
+SB36,base,"Sink base, false drawer front + 2 doors, 36""W",36,30.0,23.88,328.0,
+SB42,base,"Sink base, false drawer front + 2 doors, 42""W",42,30.0,23.88,363.0,
+3DB12,base,"3-drawer base cabinet, 12""W",12,30.0,23.88,470.0,
+3DB15,base,"3-drawer base cabinet, 15""W",15,30.0,23.88,499.0,
+3DB18,base,"3-drawer base cabinet, 18""W",18,30.0,23.88,528.0,
+3DB21,base,"3-drawer base cabinet, 21""W",21,30.0,23.88,556.0,
+3DB24,base,"3-drawer base cabinet, 24""W",24,30.0,23.88,584.0,
+3DB27,base,"3-drawer base cabinet, 27""W",27,30.0,23.88,612.0,
+3DB30,base,"3-drawer base cabinet, 30""W",30,30.0,23.88,642.0,
+3DB33,base,"3-drawer base cabinet, 33""W",33,30.0,23.88,670.0,
+3DB36,base,"3-drawer base cabinet, 36""W",36,30.0,23.88,701.0,
+2DB30,base,"2-drawer base cabinet, deep drawers, 30""W",30,30.0,23.88,678.0,PB box n/a
+2DB36,base,"2-drawer base cabinet, deep drawers, 36""W",36,30.0,23.88,745.0,PB box n/a
+BER33,base,"Base easy-reach corner 33""x33""",33,30.0,33,482.0,"Needs 33"" on each wall leg"
+BER36,base,"Base easy-reach corner 36""x36""",36,30.0,36,536.0,"Needs 36"" on each wall leg"
+BLS33,base,"Base lazy susan corner 33""x33""",33,30.0,33,818.0,Order BLS33 TRAY hardware
+BLS36,base,"Base lazy susan corner 36""x36""",36,30.0,36,872.0,Order BLS36 TRAY hardware
+BBC42,base,"Base blind corner 42""W",42,30.0,23.88,318.0,"Needs ~15"" pull from adjacent wall"
+BBC45,base,"Base blind corner 45""W",45,30.0,23.88,336.0,"Needs ~18"" pull from adjacent wall"
+BSR09,base,"Base spice rack 9""W x 39""H (spice rack included)",9,39,23.88,454.0,
+BMC30,base,"Base microwave cabinet 30""W (open shelf + drawer)",30,30.0,23.88,376.0,
+W0930,wall,"Wall cabinet 9""W x 30""H, 1 door",9,30,12.0,114.0,
+W1230,wall,"Wall cabinet 12""W x 30""H, 1 door",12,30,12.0,134.0,
+W1530,wall,"Wall cabinet 15""W x 30""H, 1 door",15,30,12.0,154.0,
+W1830,wall,"Wall cabinet 18""W x 30""H, 1 door",18,30,12.0,173.0,
+W2130,wall,"Wall cabinet 21""W x 30""H, 1 door",21,30,12.0,192.0,
+W2430,wall,"Wall cabinet 24""W x 30""H, 2 doors",24,30,12.0,225.0,
+W2730,wall,"Wall cabinet 27""W x 30""H, 2 doors",27,30,12.0,245.0,
+W3030,wall,"Wall cabinet 30""W x 30""H, 2 doors",30,30,12.0,265.0,
+W3330,wall,"Wall cabinet 33""W x 30""H, 2 doors",33,30,12.0,284.0,
+W3630,wall,"Wall cabinet 36""W x 30""H, 2 doors",36,30,12.0,303.0,
+W0936,wall,"Wall cabinet 9""W x 36""H, 1 door",9,36,12.0,136.0,
+W1236,wall,"Wall cabinet 12""W x 36""H, 1 door",12,36,12.0,157.0,
+W1536,wall,"Wall cabinet 15""W x 36""H, 1 door",15,36,12.0,180.0,
+W1836,wall,"Wall cabinet 18""W x 36""H, 1 door",18,36,12.0,201.0,
+W2136,wall,"Wall cabinet 21""W x 36""H, 1 door",21,36,12.0,222.0,
+W2436,wall,"Wall cabinet 24""W x 36""H, 2 doors",24,36,12.0,264.0,
+W2736,wall,"Wall cabinet 27""W x 36""H, 2 doors",27,36,12.0,286.0,
+W3036,wall,"Wall cabinet 30""W x 36""H, 2 doors",30,36,12.0,307.0,
+W3336,wall,"Wall cabinet 33""W x 36""H, 2 doors",33,36,12.0,329.0,
+W3636,wall,"Wall cabinet 36""W x 36""H, 2 doors",36,36,12.0,350.0,
+W2442,wall,"Wall cabinet 24""W x 42""H, 2 doors",24,42,12.0,307.0,
+W301824,wall,"Wall cabinet for fridge 30""W x 18""H x 24""D, 2 doors",30,18,24,248.0,
+W361824,wall,"Wall cabinet for fridge 36""W x 18""H x 24""D, 2 doors",36,18,24,269.0,
+W1212,wall,"Wall short cabinet 12""W x 12""H",12,12,12.0,70.0,
+W2412,wall,"Wall short cabinet 24""W x 12""H",24,12,12.0,122.0,
+W2418,wall,"Wall short cabinet 24""W x 18""H",24,18,12.0,159.0,
+WER2430,wall,"Wall easy-reach corner 24""x24"", 30""H",24,30,12.0,292.0,
+WER2436,wall,"Wall easy-reach corner 24""x24"", 36""H",24,36,12.0,345.0,
+WBC2730,wall,"Wall blind corner 27""W x 30""H",27,30,12.0,238.0,Door pulls from one side
+WMC2418,wall,"Wall microwave cabinet 24""W x 18""H",24,18,12.0,189.0,
+WMC3018,wall,"Wall microwave cabinet 30""W x 18""H",30,18,12.0,230.0,
+WSL3018,wall,"Wall stay-lift cabinet 30""W x 18""H (BLUM stay lift)",30,18,12.0,373.0,BLUM stay lift + hinge included; PB box n/a
+PC1884,tall,"Pantry cabinet 18""W x 84""H, 1 side door",18,84,23.88,592.0,Height includes feet
+PC1890,tall,"Pantry cabinet 18""W x 90""H, 1 side door",18,90,23.88,626.0,Height includes feet
+PC1896,tall,"Pantry cabinet 18""W x 96""H, 1 side door",18,96,23.88,656.0,Height includes feet
+PC2484,tall,"Pantry cabinet 24""W x 84""H, 2 full doors",24,84,23.88,750.0,Height includes feet
+PC2490,tall,"Pantry cabinet 24""W x 90""H, 2 full doors",24,90,23.88,787.0,Height includes feet
+PC2496,tall,"Pantry cabinet 24""W x 96""H, 2 full doors",24,96,23.88,822.0,Height includes feet
+PC3084,tall,"Pantry cabinet 30""W x 84""H, 2 full doors",30,84,23.88,867.0,Height includes feet
+PC3090,tall,"Pantry cabinet 30""W x 90""H, 2 full doors",30,90,23.88,907.0,Height includes feet
+PC3096,tall,"Pantry cabinet 30""W x 96""H, 2 full doors",30,96,23.88,947.0,Height includes feet
+DOC3090,tall,"Double oven cabinet 30""W x 90""H (cut-out 55-1/8""H)",30,90,23.88,1364.0,"Single 12""H drawer at bottom; PB box n/a"
+WF330,filler,"Filler 3""W x 30""H",3,30,0.75,25.0,
+WF336,filler,"Filler 3""W x 36""H",3,36,0.75,27.0,
+WF342,filler,"Filler 3""W x 42""H",3,42,0.75,30.0,
+WF636,filler,"Filler 6""W x 36""H",6,36,0.75,45.0,
+TF396,filler,"Filler 3""W x 96""H",3,96,0.75,56.0,
+BEP24,panel,"Base end panel 24-3/4""W x 34-1/2""H",24.75,34.5,0.75,77.0,
+BEP36,panel,"Base end panel 37-1/4""W x 34-1/2""H",37.25,34.5,0.75,118.0,
+WEP1230,panel,"Wall end panel 12-3/4""W x 30""H",12.75,30,0.75,35.0,
+WEP1236,panel,"Wall end panel 12-3/4""W x 36""H",12.75,36,0.75,42.0,
+REF2496,panel,"Refrigerator end panel 24-3/4""W x 96""H",24.75,96,0.75,214.0,
+REF3696,panel,"Refrigerator end panel 36""W x 96""H",36,96,0.75,297.0,
+DWEP3,panel,"Dishwasher end panel 24-3/4""W x 34-1/2""H",24.75,34.5,0.75,76.0,
+TK8,panel,"Toe kick 96""L x 4-1/2""H",96,4.5,0.25,65.0,
+CM4,accessory,"Crown molding 96""L",96,4,0.75,217.0,Shaker crown
+HINGE105,accessory,"105° soft-close hinge, 6-way adjustable",3.5,3.5,1,10.0,Standard hinge

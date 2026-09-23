@@ -1,0 +1,2447 @@
+{
+ "pricing_formula": "MSRP = box_msrp (box_ply or box_pb) + door_msrp (essential|premium|elite) + fee (assembled_fee or rta_fee)",
+ "default_basis": "RTA + BOX-PB + Essential doors",
+ "source": "Oppein_RTA_Quote_Form.xlsx / Data base sheet",
+ "skus": {
+  "B12": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 335.0,
+   "essential": 31.0,
+   "premium": 78.0,
+   "elite": 94.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 239.0
+  },
+  "B15": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 360.0,
+   "essential": 39.0,
+   "premium": 97.0,
+   "elite": 118.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 256.0
+  },
+  "B18": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 386.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 273.0
+  },
+  "BTC18": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 733.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 597.0
+  },
+  "B21": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 411.0,
+   "essential": 54.0,
+   "premium": 136.0,
+   "elite": 165.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 290.0
+  },
+  "B24": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 445.0,
+   "essential": 62.0,
+   "premium": 156.0,
+   "elite": 189.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 321.0
+  },
+  "B27": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 580.0,
+   "essential": 70.0,
+   "premium": 175.0,
+   "elite": 212.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 338.0
+  },
+  "B30": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 496.0,
+   "essential": 78.0,
+   "premium": 194.0,
+   "elite": 236.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 355.0
+  },
+  "B33": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 521.0,
+   "essential": 86.0,
+   "premium": 214.0,
+   "elite": 259.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 373.0
+  },
+  "B36": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 548.0,
+   "essential": 93.0,
+   "premium": 233.0,
+   "elite": 283.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 393.0
+  },
+  "B42": {
+   "description": "Regular Base Cabinet",
+   "box_ply": 601.0,
+   "essential": 109.0,
+   "premium": 272.0,
+   "elite": 328.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 427.0
+  },
+  "SB30": {
+   "description": "Sink Base",
+   "box_ply": 298.0,
+   "essential": 78.0,
+   "premium": 194.0,
+   "elite": 236.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 212.0
+  },
+  "SB33": {
+   "description": "Sink Base",
+   "box_ply": 308.0,
+   "essential": 86.0,
+   "premium": 214.0,
+   "elite": 259.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 222.0
+  },
+  "SB36": {
+   "description": "Sink Base",
+   "box_ply": 323.0,
+   "essential": 93.0,
+   "premium": 233.0,
+   "elite": 283.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 235.0
+  },
+  "SB42": {
+   "description": "Sink Base",
+   "box_ply": 353.0,
+   "essential": 109.0,
+   "premium": 272.0,
+   "elite": 328.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 254.0
+  },
+  "BBC42": {
+   "description": "Base Blind Corner",
+   "box_ply": 444.0,
+   "essential": 51.0,
+   "premium": 128.0,
+   "elite": 155.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 267.0
+  },
+  "BBC45": {
+   "description": "Base Blind Corner",
+   "box_ply": 519.0,
+   "essential": 56.0,
+   "premium": 140.0,
+   "elite": 170.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 280.0
+  },
+  "BER33": {
+   "description": "Base Lazy Susan",
+   "box_ply": 700.0,
+   "essential": 62.0,
+   "premium": 119.0,
+   "elite": 185.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 420.0
+  },
+  "BER36": {
+   "description": "Base Lazy Susan",
+   "box_ply": 758.0,
+   "essential": 81.0,
+   "premium": 158.0,
+   "elite": 245.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 455.0
+  },
+  "BLS33": {
+   "description": "Base Lazy Susan",
+   "box_ply": 1036.0,
+   "essential": 62.0,
+   "premium": 119.0,
+   "elite": 185.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 756.0
+  },
+  "BLS36": {
+   "description": "Base Lazy Susan",
+   "box_ply": 1094.0,
+   "essential": 81.0,
+   "premium": 158.0,
+   "elite": 245.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 791.0
+  },
+  "3DB12": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 567.0,
+   "essential": 31.0,
+   "premium": 78.0,
+   "elite": 94.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 439.0
+  },
+  "3DB15": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 600.0,
+   "essential": 39.0,
+   "premium": 97.0,
+   "elite": 118.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 460.0
+  },
+  "3DB18": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 632.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 481.0
+  },
+  "3DB21": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 665.0,
+   "essential": 54.0,
+   "premium": 136.0,
+   "elite": 165.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 502.0
+  },
+  "3DB24": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 698.0,
+   "essential": 62.0,
+   "premium": 156.0,
+   "elite": 189.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 522.0
+  },
+  "3DB27": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 730.0,
+   "essential": 70.0,
+   "premium": 175.0,
+   "elite": 212.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 542.0
+  },
+  "3DB30": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 763.0,
+   "essential": 78.0,
+   "premium": 194.0,
+   "elite": 236.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 564.0
+  },
+  "3DB33": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 795.0,
+   "essential": 86.0,
+   "premium": 214.0,
+   "elite": 259.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 584.0
+  },
+  "3DB36": {
+   "description": "3 Drawer\nBase Cabinet",
+   "box_ply": 852.0,
+   "essential": 93.0,
+   "premium": 233.0,
+   "elite": 283.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": 608.0
+  },
+  "2DB30": {
+   "description": "2 Drawer Base Cabinet",
+   "box_ply": 600.0,
+   "essential": 78.0,
+   "premium": 194.0,
+   "elite": 236.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "2DB36": {
+   "description": "2 Drawer Base Cabinet",
+   "box_ply": 652.0,
+   "essential": 93.0,
+   "premium": 233.0,
+   "elite": 283.0,
+   "assembled_fee": 25.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BSR06": {
+   "description": "Base Spice rack",
+   "box_ply": 544.0,
+   "essential": 16.0,
+   "premium": 39.0,
+   "elite": 47.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 409.0
+  },
+  "BSR09": {
+   "description": "Base Spice rack",
+   "box_ply": 572.0,
+   "essential": 18.0,
+   "premium": 58.0,
+   "elite": 81.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 436.0
+  },
+  "BSR12": {
+   "description": "Base Spice rack",
+   "box_ply": 621.0,
+   "essential": 26.0,
+   "premium": 78.0,
+   "elite": 107.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 476.0
+  },
+  "B06FH": {
+   "description": "Base Full Height",
+   "box_ply": 177.0,
+   "essential": 16.0,
+   "premium": 39.0,
+   "elite": 47.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 125.0
+  },
+  "B09FH": {
+   "description": "Base Full Height",
+   "box_ply": 190.0,
+   "essential": 23.0,
+   "premium": 58.0,
+   "elite": 81.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 139.0
+  },
+  "B12FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 31.0,
+   "premium": 78.0,
+   "elite": 107.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 152.0
+  },
+  "B15FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 39.0,
+   "premium": 97.0,
+   "elite": 120.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 165.0
+  },
+  "B18FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 144.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 178.0
+  },
+  "B21FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 54.0,
+   "premium": 136.0,
+   "elite": 168.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 191.0
+  },
+  "B24FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 62.0,
+   "premium": 156.0,
+   "elite": 192.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 218.0
+  },
+  "B27FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 70.0,
+   "premium": 175.0,
+   "elite": 216.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 231.0
+  },
+  "B30FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 78.0,
+   "premium": 194.0,
+   "elite": 238.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 244.0
+  },
+  "B33FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 86.0,
+   "premium": 214.0,
+   "elite": 264.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 257.0
+  },
+  "B36FH": {
+   "description": "Base Full Height",
+   "box_ply": null,
+   "essential": 93.0,
+   "premium": 233.0,
+   "elite": 286.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 274.0
+  },
+  "BMC24": {
+   "description": "Base Microwave Cabinet",
+   "box_ply": 427.0,
+   "essential": 29.0,
+   "premium": 73.0,
+   "elite": 92.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 308.0
+  },
+  "BMC30": {
+   "description": "Base Microwave Cabinet",
+   "box_ply": 472.0,
+   "essential": 36.0,
+   "premium": 91.0,
+   "elite": 112.0,
+   "assembled_fee": 20.0,
+   "rta_fee": 0.0,
+   "box_pb": 340.0
+  },
+  "W0930": {
+   "description": "Wall Cabinet",
+   "box_ply": 140.0,
+   "essential": 23.0,
+   "premium": 58.0,
+   "elite": 71.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 91.0
+  },
+  "W1230": {
+   "description": "Wall Cabinet",
+   "box_ply": 159.0,
+   "essential": 31.0,
+   "premium": 78.0,
+   "elite": 94.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 103.0
+  },
+  "W1530": {
+   "description": "Wall Cabinet",
+   "box_ply": 179.0,
+   "essential": 39.0,
+   "premium": 97.0,
+   "elite": 118.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 115.0
+  },
+  "W1830": {
+   "description": "Wall Cabinet",
+   "box_ply": 199.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 126.0
+  },
+  "W2130": {
+   "description": "Wall Cabinet",
+   "box_ply": 219.0,
+   "essential": 54.0,
+   "premium": 136.0,
+   "elite": 165.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 138.0
+  },
+  "W2430": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 247.0,
+   "essential": 62.0,
+   "premium": 156.0,
+   "elite": 189.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 163.0
+  },
+  "W2730": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 269.0,
+   "essential": 70.0,
+   "premium": 175.0,
+   "elite": 212.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 175.0
+  },
+  "W3030": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 288.0,
+   "essential": 78.0,
+   "premium": 194.0,
+   "elite": 236.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 187.0
+  },
+  "W3330": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 308.0,
+   "essential": 86.0,
+   "premium": 214.0,
+   "elite": 259.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 198.0
+  },
+  "W3630": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 328.0,
+   "essential": 93.0,
+   "premium": 233.0,
+   "elite": 283.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 210.0
+  },
+  "W0936": {
+   "description": "Wall Cabinet",
+   "box_ply": 160.0,
+   "essential": 28.0,
+   "premium": 70.0,
+   "elite": 85.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 108.0
+  },
+  "W1236": {
+   "description": "Wall Cabinet",
+   "box_ply": 181.0,
+   "essential": 37.0,
+   "premium": 93.0,
+   "elite": 113.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 120.0
+  },
+  "W1536": {
+   "description": "Wall Cabinet",
+   "box_ply": 201.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 133.0
+  },
+  "W1836": {
+   "description": "Wall Cabinet",
+   "box_ply": 222.0,
+   "essential": 56.0,
+   "premium": 140.0,
+   "elite": 170.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 145.0
+  },
+  "W2136": {
+   "description": "Wall Cabinet",
+   "box_ply": 242.0,
+   "essential": 65.0,
+   "premium": 163.0,
+   "elite": 198.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 157.0
+  },
+  "W2436": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 276.0,
+   "essential": 75.0,
+   "premium": 187.0,
+   "elite": 226.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 189.0
+  },
+  "W2736": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 299.0,
+   "essential": 84.0,
+   "premium": 210.0,
+   "elite": 255.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 202.0
+  },
+  "W3036": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 319.0,
+   "essential": 93.0,
+   "premium": 233.0,
+   "elite": 283.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 214.0
+  },
+  "W3336": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 340.0,
+   "essential": 103.0,
+   "premium": 257.0,
+   "elite": 311.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 226.0
+  },
+  "W3636": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 360.0,
+   "essential": 112.0,
+   "premium": 280.0,
+   "elite": 339.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 238.0
+  },
+  "W0942": {
+   "description": "Wall Cabinet",
+   "box_ply": 191.0,
+   "essential": 33.0,
+   "premium": 82.0,
+   "elite": 99.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 124.0
+  },
+  "W1242": {
+   "description": "Wall Cabinet",
+   "box_ply": 217.0,
+   "essential": 44.0,
+   "premium": 109.0,
+   "elite": 132.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 139.0
+  },
+  "W1542": {
+   "description": "Wall Cabinet",
+   "box_ply": 243.0,
+   "essential": 54.0,
+   "premium": 136.0,
+   "elite": 165.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 154.0
+  },
+  "W1842": {
+   "description": "Wall Cabinet",
+   "box_ply": 269.0,
+   "essential": 65.0,
+   "premium": 163.0,
+   "elite": 198.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 170.0
+  },
+  "W2142": {
+   "description": "Wall Cabinet",
+   "box_ply": 294.0,
+   "essential": 76.0,
+   "premium": 191.0,
+   "elite": 231.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 185.0
+  },
+  "W2442": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 333.0,
+   "essential": 87.0,
+   "premium": 218.0,
+   "elite": 264.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 220.0
+  },
+  "W2742": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 359.0,
+   "essential": 98.0,
+   "premium": 245.0,
+   "elite": 297.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 235.0
+  },
+  "W3042": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 384.0,
+   "essential": 109.0,
+   "premium": 272.0,
+   "elite": 330.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 250.0
+  },
+  "W3342": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 410.0,
+   "essential": 120.0,
+   "premium": 299.0,
+   "elite": 363.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 266.0
+  },
+  "W3642": {
+   "description": "Wall Cabinet 2 Door",
+   "box_ply": 436.0,
+   "essential": 131.0,
+   "premium": 327.0,
+   "elite": 396.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 281.0
+  },
+  "W1212": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 81.0,
+   "essential": 12.0,
+   "premium": 31.0,
+   "elite": 38.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 58.0
+  },
+  "W1512": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 91.0,
+   "essential": 16.0,
+   "premium": 39.0,
+   "elite": 47.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 65.0
+  },
+  "W1812": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 102.0,
+   "essential": 19.0,
+   "premium": 47.0,
+   "elite": 57.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 71.0
+  },
+  "W2112": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 112.0,
+   "essential": 22.0,
+   "premium": 54.0,
+   "elite": 66.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 78.0
+  },
+  "W2412": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 131.0,
+   "essential": 25.0,
+   "premium": 62.0,
+   "elite": 76.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 97.0
+  },
+  "W2712": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 141.0,
+   "essential": 28.0,
+   "premium": 70.0,
+   "elite": 85.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 104.0
+  },
+  "W3012": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 151.0,
+   "essential": 31.0,
+   "premium": 78.0,
+   "elite": 94.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 110.0
+  },
+  "W3312": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 162.0,
+   "essential": 34.0,
+   "premium": 86.0,
+   "elite": 104.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 117.0
+  },
+  "W3612": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 174.0,
+   "essential": 37.0,
+   "premium": 93.0,
+   "elite": 113.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 123.0
+  },
+  "W2415": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 142.0,
+   "essential": 32.0,
+   "premium": 72.0,
+   "elite": 89.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 114.0
+  },
+  "W3015": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 163.0,
+   "essential": 39.0,
+   "premium": 97.0,
+   "elite": 118.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 118.0
+  },
+  "W3315": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 173.0,
+   "essential": 43.0,
+   "premium": 107.0,
+   "elite": 130.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 124.0
+  },
+  "W3615": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 186.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 131.0
+  },
+  "W2418": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 153.0,
+   "essential": 38.0,
+   "premium": 86.0,
+   "elite": 108.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 121.0
+  },
+  "W3018": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 174.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 124.0
+  },
+  "W3318": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 185.0,
+   "essential": 51.0,
+   "premium": 128.0,
+   "elite": 155.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 131.0
+  },
+  "W3618": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 198.0,
+   "essential": 56.0,
+   "premium": 140.0,
+   "elite": 170.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 138.0
+  },
+  "W2421": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 163.0,
+   "essential": 44.0,
+   "premium": 101.0,
+   "elite": 125.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 129.0
+  },
+  "W3021": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 185.0,
+   "essential": 54.0,
+   "premium": 136.0,
+   "elite": 165.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 131.0
+  },
+  "W3321": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 196.0,
+   "essential": 60.0,
+   "premium": 150.0,
+   "elite": 181.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 139.0
+  },
+  "W3621": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 211.0,
+   "essential": 66.0,
+   "premium": 163.0,
+   "elite": 199.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 161.0
+  },
+  "W2424": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 200.0,
+   "essential": 50.0,
+   "premium": 115.0,
+   "elite": 142.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 151.0
+  },
+  "W3024": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 230.0,
+   "essential": 62.0,
+   "premium": 156.0,
+   "elite": 189.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 156.0
+  },
+  "W3324": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 245.0,
+   "essential": 68.0,
+   "premium": 171.0,
+   "elite": 208.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 165.0
+  },
+  "W3624": {
+   "description": "Wall Short Cabinet",
+   "box_ply": 263.0,
+   "essential": 75.0,
+   "premium": 187.0,
+   "elite": 226.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 174.0
+  },
+  "W301224": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 244.0,
+   "essential": 31.0,
+   "premium": 78.0,
+   "elite": 94.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 168.0
+  },
+  "W331224": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 261.0,
+   "essential": 34.0,
+   "premium": 86.0,
+   "elite": 104.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 179.0
+  },
+  "W361224": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 278.0,
+   "essential": 37.0,
+   "premium": 93.0,
+   "elite": 113.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 189.0
+  },
+  "W301524": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 262.0,
+   "essential": 39.0,
+   "premium": 97.0,
+   "elite": 118.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 180.0
+  },
+  "W331524": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 279.0,
+   "essential": 43.0,
+   "premium": 107.0,
+   "elite": 130.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 190.0
+  },
+  "W361524": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 297.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 141.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 202.0
+  },
+  "W301824": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 282.0,
+   "essential": 47.0,
+   "premium": 117.0,
+   "elite": 142.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 201.0
+  },
+  "W331824": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 298.0,
+   "essential": 51.0,
+   "premium": 128.0,
+   "elite": 155.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 202.0
+  },
+  "W361824": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 315.0,
+   "essential": 56.0,
+   "premium": 140.0,
+   "elite": 170.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 213.0
+  },
+  "W302124": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 300.0,
+   "essential": 54.0,
+   "premium": 136.0,
+   "elite": 166.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 212.0
+  },
+  "W332124": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 318.0,
+   "essential": 60.0,
+   "premium": 150.0,
+   "elite": 183.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 224.0
+  },
+  "W362124": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 337.0,
+   "essential": 66.0,
+   "premium": 163.0,
+   "elite": 199.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 236.0
+  },
+  "W302424": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 377.0,
+   "essential": 62.0,
+   "premium": 156.0,
+   "elite": 192.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 264.0
+  },
+  "W332424": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 401.0,
+   "essential": 68.0,
+   "premium": 171.0,
+   "elite": 211.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 280.0
+  },
+  "W362424": {
+   "description": "Wall Fridge Cabinet",
+   "box_ply": 433.0,
+   "essential": 75.0,
+   "premium": 187.0,
+   "elite": 226.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 282.0
+  },
+  "WBC2730": {
+   "description": "Wall Blind Corner",
+   "box_ply": 302.0,
+   "essential": 41.0,
+   "premium": 103.0,
+   "elite": 125.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 197.0
+  },
+  "WBC2736": {
+   "description": "Wall Blind Corner",
+   "box_ply": 336.0,
+   "essential": 50.0,
+   "premium": 124.0,
+   "elite": 150.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 224.0
+  },
+  "WBC2742": {
+   "description": "Wall Blind Corner",
+   "box_ply": 396.0,
+   "essential": 58.0,
+   "premium": 145.0,
+   "elite": 175.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": 244.0
+  },
+  "WER2412": {
+   "description": "Wall Easy Reach",
+   "box_ply": 241.0,
+   "essential": 25.0,
+   "premium": 61.0,
+   "elite": 76.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 151.0
+  },
+  "WER2430": {
+   "description": "Wall Easy Reach",
+   "box_ply": 467.0,
+   "essential": 62.0,
+   "premium": 153.0,
+   "elite": 189.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 230.0
+  },
+  "WER2436": {
+   "description": "Wall Easy Reach",
+   "box_ply": 531.0,
+   "essential": 75.0,
+   "premium": 184.0,
+   "elite": 226.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 270.0
+  },
+  "WER2442": {
+   "description": "Wall Easy Reach",
+   "box_ply": 624.0,
+   "essential": 87.0,
+   "premium": 214.0,
+   "elite": 264.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 311.0
+  },
+  "WDC2412": {
+   "description": "Wall Diagonal Cabinet",
+   "box_ply": 217.0,
+   "essential": 17.0,
+   "premium": 41.0,
+   "elite": 52.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 106.0
+  },
+  "WDC2430": {
+   "description": "Wall Diagonal Cabinet",
+   "box_ply": 436.0,
+   "essential": 41.0,
+   "premium": 102.0,
+   "elite": 124.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 216.0
+  },
+  "WDC2436": {
+   "description": "Wall Diagonal Cabinet",
+   "box_ply": 482.0,
+   "essential": 49.0,
+   "premium": 122.0,
+   "elite": 148.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 248.0
+  },
+  "WDC2442": {
+   "description": "Wall Diagonal Cabinet",
+   "box_ply": 577.0,
+   "essential": 57.0,
+   "premium": 143.0,
+   "elite": 173.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": 289.0
+  },
+  "WBF3030": {
+   "description": "Wall Bi-Fold",
+   "box_ply": 874.0,
+   "essential": 89.0,
+   "premium": 221.0,
+   "elite": 269.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WBF3630": {
+   "description": "Wall Bi-Fold",
+   "box_ply": 919.0,
+   "essential": 106.0,
+   "premium": 266.0,
+   "elite": 323.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WSL3015": {
+   "description": "Wall Stay Lift",
+   "box_ply": 306.0,
+   "essential": 44.0,
+   "premium": 111.0,
+   "elite": 135.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WSL3615": {
+   "description": "Wall Stay Lift",
+   "box_ply": 335.0,
+   "essential": 54.0,
+   "premium": 133.0,
+   "elite": 117.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WSL3018": {
+   "description": "Wall Stay Lift",
+   "box_ply": 319.0,
+   "essential": 54.0,
+   "premium": 133.0,
+   "elite": 161.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WSL3618": {
+   "description": "Wall Stay Lift",
+   "box_ply": 349.0,
+   "essential": 64.0,
+   "premium": 160.0,
+   "elite": 194.0,
+   "assembled_fee": 35.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "PC1884": {
+   "description": "Pantry Cabinet",
+   "box_ply": 714.0,
+   "essential": 141.0,
+   "premium": 309.0,
+   "elite": 428.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 451.0
+  },
+  "PC1890": {
+   "description": "Pantry Cabinet",
+   "box_ply": 746.0,
+   "essential": 152.0,
+   "premium": 332.0,
+   "elite": 459.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 474.0
+  },
+  "PC1896": {
+   "description": "Pantry Cabinet",
+   "box_ply": 778.0,
+   "essential": 162.0,
+   "premium": 356.0,
+   "elite": 491.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 494.0
+  },
+  "PC2484": {
+   "description": "Pantry Cabinet",
+   "box_ply": 845.0,
+   "essential": 188.0,
+   "premium": 412.0,
+   "elite": 570.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 562.0
+  },
+  "PC2490": {
+   "description": "Pantry Cabinet",
+   "box_ply": 881.0,
+   "essential": 203.0,
+   "premium": 443.0,
+   "elite": 613.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 584.0
+  },
+  "PC2496": {
+   "description": "Pantry Cabinet",
+   "box_ply": 915.0,
+   "essential": 217.0,
+   "premium": 474.0,
+   "elite": 656.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 605.0
+  },
+  "PC3084": {
+   "description": "Pantry Cabinet",
+   "box_ply": 957.0,
+   "essential": 235.0,
+   "premium": 515.0,
+   "elite": 713.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 632.0
+  },
+  "PC3090": {
+   "description": "Pantry Cabinet",
+   "box_ply": 993.0,
+   "essential": 253.0,
+   "premium": 554.0,
+   "elite": 766.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 654.0
+  },
+  "PC3096": {
+   "description": "Pantry Cabinet",
+   "box_ply": 1028.0,
+   "essential": 270.0,
+   "premium": 593.0,
+   "elite": 820.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": 677.0
+  },
+  "DOC3084": {
+   "description": "Double Oven Cabinet",
+   "box_ply": 1219.0,
+   "essential": 87.0,
+   "premium": 215.0,
+   "elite": 262.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "DOC3090": {
+   "description": "Double Oven Cabinet",
+   "box_ply": 1260.0,
+   "essential": 104.0,
+   "premium": 260.0,
+   "elite": 316.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "DOC3096": {
+   "description": "Double Oven Cabinet",
+   "box_ply": 1301.0,
+   "essential": 122.0,
+   "premium": 304.0,
+   "elite": 369.0,
+   "assembled_fee": 30.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WOC3015": {
+   "description": "Wall Open Cabinet",
+   "box_ply": null,
+   "essential": 142.0,
+   "premium": 238.0,
+   "elite": 238.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WOC3018": {
+   "description": "Wall Open Cabinet",
+   "box_ply": null,
+   "essential": 156.0,
+   "premium": 263.0,
+   "elite": 263.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WOC3615": {
+   "description": "Wall Open Cabinet",
+   "box_ply": null,
+   "essential": 163.0,
+   "premium": 274.0,
+   "elite": 274.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WOC3618": {
+   "description": "Wall Open Cabinet",
+   "box_ply": null,
+   "essential": 180.0,
+   "premium": 302.0,
+   "elite": 302.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WRC0630": {
+   "description": "Wine Rack",
+   "box_ply": null,
+   "essential": 104.0,
+   "premium": 283.0,
+   "elite": 283.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WRC0636": {
+   "description": "Wine Rack",
+   "box_ply": null,
+   "essential": 120.0,
+   "premium": 328.0,
+   "elite": 328.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WRC0642": {
+   "description": "Wine Rack",
+   "box_ply": null,
+   "essential": 142.0,
+   "premium": 367.0,
+   "elite": 367.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WMC2418": {
+   "description": "Wall Microwave Cabinet",
+   "box_ply": null,
+   "essential": 189.0,
+   "premium": 292.0,
+   "elite": 292.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WMC3018": {
+   "description": "Wall Microwave Cabinet",
+   "box_ply": null,
+   "essential": 230.0,
+   "premium": 308.0,
+   "elite": 308.0,
+   "assembled_fee": 15.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BEP24": {
+   "description": "Base End Panel",
+   "box_ply": null,
+   "essential": 77.0,
+   "premium": 148.0,
+   "elite": 148.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BEP26": {
+   "description": "Base End Panel",
+   "box_ply": null,
+   "essential": 80.0,
+   "premium": 152.0,
+   "elite": 152.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BEP36": {
+   "description": "Base End Panel",
+   "box_ply": null,
+   "essential": 118.0,
+   "premium": 225.0,
+   "elite": 225.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BEP48": {
+   "description": "Base End Panel",
+   "box_ply": null,
+   "essential": 154.0,
+   "premium": 298.0,
+   "elite": 298.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WEP1230": {
+   "description": "Wall End Panel",
+   "box_ply": null,
+   "essential": 35.0,
+   "premium": 68.0,
+   "elite": 68.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WEP1236": {
+   "description": "Wall End Panel",
+   "box_ply": null,
+   "essential": 42.0,
+   "premium": 82.0,
+   "elite": 82.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WEP1242": {
+   "description": "Wall End Panel",
+   "box_ply": null,
+   "essential": 48.0,
+   "premium": 95.0,
+   "elite": 95.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "REF2496": {
+   "description": "REF Panel",
+   "box_ply": null,
+   "essential": 214.0,
+   "premium": 348.0,
+   "elite": 348.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "REF3696": {
+   "description": "REF Panel",
+   "box_ply": null,
+   "essential": 297.0,
+   "premium": 494.0,
+   "elite": 494.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "PNL3696": {
+   "description": "REF Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 262.0,
+   "elite": 262.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "DWEP3": {
+   "description": "Dishwash End panel",
+   "box_ply": null,
+   "essential": 76.0,
+   "premium": 158.0,
+   "elite": 158.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "TK8": {
+   "description": "Toe Kick",
+   "box_ply": null,
+   "essential": 65.0,
+   "premium": 94.0,
+   "elite": 94.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WF330": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 25.0,
+   "premium": 36.0,
+   "elite": 36.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WF336": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 27.0,
+   "premium": 42.0,
+   "elite": 42.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WF342": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 30.0,
+   "premium": 46.0,
+   "elite": 46.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "TF396": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 56.0,
+   "premium": 84.0,
+   "elite": 84.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WF630": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 39.0,
+   "premium": 64.0,
+   "elite": 64.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WF636": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 45.0,
+   "premium": 74.0,
+   "elite": 74.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "WF642": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 50.0,
+   "premium": 84.0,
+   "elite": 84.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "TF696": {
+   "description": "Filler",
+   "box_ply": null,
+   "essential": 103.0,
+   "premium": 158.0,
+   "elite": 158.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "W2430S": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": 72.0,
+   "premium": 178.0,
+   "elite": 223.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "MWEP1230": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 101.0,
+   "elite": 128.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "MWEP1236": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 121.0,
+   "elite": 152.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "MWEP1242": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 141.0,
+   "elite": 177.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "MBEP2430": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 194.0,
+   "elite": 243.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "MTEP2484": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 512.0,
+   "elite": 632.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "MTEP2490": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 551.0,
+   "elite": 685.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "MTEP2496": {
+   "description": "Shaker Style End Panel",
+   "box_ply": null,
+   "essential": null,
+   "premium": 590.0,
+   "elite": 735.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "CVCM": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 200.0,
+   "elite": 200.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "CM4": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 217.0,
+   "elite": 217.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "RISER": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 122.0,
+   "elite": 122.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "LM8": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 157.0,
+   "elite": 157.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "OCM8": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 86.0,
+   "elite": 86.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "SM8": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 42.0,
+   "elite": 42.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BM8": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 226.0,
+   "elite": 226.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "COBEL-S": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 102.0,
+   "elite": 102.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "VAL33": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 68.0,
+   "elite": 68.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "VAL48": {
+   "description": "Exclusive for Shaker",
+   "box_ply": null,
+   "essential": null,
+   "premium": 82.0,
+   "elite": 82.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "ROT18": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 239.0,
+   "premium": 239.0,
+   "elite": 239.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "ROT24": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 273.0,
+   "premium": 273.0,
+   "elite": 273.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "ROT30": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 307.0,
+   "premium": 307.0,
+   "elite": 307.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-BLS33 TRAY": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 336.0,
+   "premium": 336.0,
+   "elite": 336.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-BLS36 TRAY": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 336.0,
+   "premium": 336.0,
+   "elite": 336.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-BSR06-SPICE RACK": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 304.0,
+   "premium": 304.0,
+   "elite": 304.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-BSR09-SPICE RACK": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 321.0,
+   "premium": 321.0,
+   "elite": 321.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-BSR12-SPICE RACK": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 351.0,
+   "premium": 351.0,
+   "elite": 351.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-BTC18-TRASH CAN": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 460.0,
+   "premium": 460.0,
+   "elite": 460.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "A-TK10": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 110.0,
+   "premium": 110.0,
+   "elite": 110.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "B-TK10": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 110.0,
+   "premium": 110.0,
+   "elite": 110.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-DRAWER-HIGH": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 148.0,
+   "premium": 148.0,
+   "elite": 148.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-DRAWER-LOW": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 125.0,
+   "premium": 125.0,
+   "elite": 125.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-PLASTIC LEG": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 12.0,
+   "premium": 12.0,
+   "elite": 12.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-HINGE45": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 18.0,
+   "premium": 18.0,
+   "elite": 18.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-HINGE105": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 10.0,
+   "premium": 10.0,
+   "elite": 10.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-HINGE135": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 22.0,
+   "premium": 22.0,
+   "elite": 22.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "HW-HINGE155": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 18.0,
+   "premium": 18.0,
+   "elite": 18.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BLIM STAY LIFT": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 138.0,
+   "premium": 138.0,
+   "elite": 138.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "BLUM FOLD LIFT": {
+   "description": "Hardware",
+   "box_ply": null,
+   "essential": 395.0,
+   "premium": 395.0,
+   "elite": 395.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1230": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 217.0,
+   "premium": 217.0,
+   "elite": 217.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1236": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 240.0,
+   "premium": 240.0,
+   "elite": 240.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1242": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 263.0,
+   "premium": 263.0,
+   "elite": 263.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1530": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 246.0,
+   "premium": 246.0,
+   "elite": 246.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1536": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 275.0,
+   "premium": 275.0,
+   "elite": 275.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1542": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 304.0,
+   "premium": 304.0,
+   "elite": 304.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1830": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 275.0,
+   "premium": 275.0,
+   "elite": 275.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1836": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 309.0,
+   "premium": 309.0,
+   "elite": 309.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WMD1842": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 356.0,
+   "premium": 356.0,
+   "elite": 356.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WDC2430": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 243.0,
+   "premium": 243.0,
+   "elite": 243.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WDC2436": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 291.0,
+   "premium": 291.0,
+   "elite": 291.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GL-WDC2442": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": 342.0,
+   "premium": 342.0,
+   "elite": 342.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1230": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 172.0,
+   "elite": 172.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1236": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 204.0,
+   "elite": 204.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1242": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 238.0,
+   "elite": 238.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1530": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 212.0,
+   "elite": 212.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1536": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 254.0,
+   "elite": 254.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1542": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 296.0,
+   "elite": 296.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1830": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 258.0,
+   "elite": 258.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1836": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 306.0,
+   "elite": 306.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WMD1842": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 356.0,
+   "elite": 356.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WDC2430": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 224.0,
+   "elite": 224.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WDC2436": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 265.0,
+   "elite": 265.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "GD-WDC2442": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 308.0,
+   "elite": 308.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "FT-WDC2430": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 324.0,
+   "elite": 324.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "FT-WDC2436": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 365.0,
+   "elite": 365.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "FT-WDC2442": {
+   "description": "Glass door",
+   "box_ply": null,
+   "essential": null,
+   "premium": 408.0,
+   "elite": 408.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "FS24": {
+   "description": "Floating Shelf",
+   "box_ply": null,
+   "essential": 216.0,
+   "premium": 258.0,
+   "elite": 258.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "FS30": {
+   "description": "Floating Shelf",
+   "box_ply": null,
+   "essential": 252.0,
+   "premium": 307.0,
+   "elite": 307.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  },
+  "FS36": {
+   "description": "Floating Shelf",
+   "box_ply": null,
+   "essential": 295.0,
+   "premium": 361.0,
+   "elite": 361.0,
+   "assembled_fee": 0.0,
+   "rta_fee": 0.0,
+   "box_pb": null
+  }
+ }
+}
