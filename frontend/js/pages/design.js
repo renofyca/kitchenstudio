@@ -92,7 +92,9 @@ function el(html) {
   return t.content.firstElementChild;
 }
 
-export function render(appEl, { id }) {
+export function render(appEl, params) {
+  // Router passes a URLSearchParams; accept a plain object too.
+  const id = (params && typeof params.get === "function") ? params.get("id") : params?.id;
   // ---- state ----
   const state = {
     id,
@@ -492,11 +494,12 @@ export function render(appEl, { id }) {
   (async () => {
     refs.editor.innerHTML = `<p class="kdsn-loading">Loading project…</p>`;
     try {
-      const [project, catalog] = await Promise.all([getProject(id), getCatalog(id)]);
+      const project = await getProject(id);
+      const catalogRes = await getCatalog(project.catalog_id);
       state.project = project || {};
       state.room = state.project.room || { walls: [], ceiling_in: 96, appliances: {} };
       state.design = state.project.design || null;
-      state.catalog = Array.isArray(catalog) ? catalog : [];
+      state.catalog = (catalogRes && Array.isArray(catalogRes.items)) ? catalogRes.items : [];
       assignUids(state.design);
       state.geos = computeWallGeometry(state.room);
       refs.name.textContent = state.project.name || 'Kitchen Designer';
