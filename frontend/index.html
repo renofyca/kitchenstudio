@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KitchenStudio — Cabinet design, quotes & 3D in minutes</title>
+  <meta name="description" content="KitchenStudio drafts kitchen cabinet layouts from room measurements, renders them in 3D, and builds accurate quotes from your own supplier catalog." />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="importmap">
+    {"imports":{
+      "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }}
+  </script>
+</head>
+<body>
+  <header class="topnav" id="topnav" hidden>
+    <div class="container nav-inner">
+      <a class="brand" href="#/app" data-nav="app">
+        <span class="brand-mark" aria-hidden="true">▦</span>
+        <span class="brand-name">KitchenStudio</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#/app" data-nav="app">Dashboard</a>
+        <a href="#/catalogs" data-nav="catalogs">Catalogs</a>
+      </nav>
+      <div class="nav-user">
+        <span class="nav-email" id="nav-email"></span>
+        <button class="btn btn-ghost btn-sm" id="nav-logout" type="button">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="app" class="app-root"></main>
+
+  <div class="toast-stack" id="toasts" aria-live="polite"></div>
+
+  <script type="module" src="js/router.js"></script>
+</body>
+</html>
