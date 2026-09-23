@@ -1,0 +1,2067 @@
+
+"""KitchenStudio backend — FastAPI + stdlib only.
+
+Serves the JSON API under /api and (when present) the static frontend
+from the repo's frontend/ directory at /.
+"""
+import csv
+import hashlib
+import io
+import json
+import re
+import secrets
+import sqlite3
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+
+from backend.layout import autodesign, APPLIANCE_RE
+
+REPO = Path(__file__).resolve().parent.parent
+DATA_DIR = Path(__file__).resolve().parent / "data"
+DB_PATH = DATA_DIR / "kitchenstudio.db"
+FRONTEND_DIR = REPO / "frontend"
+
+CATEGORIES = {"base", "wall", "tall", "panel", "filler", "appliance",
+              "accessory"}
+CSV_COLUMNS = ["sku", "category", "description", "width_in", "height_in",
+               "depth_in", "price", "notes"]
+CORNER_STYLES = {"easy", "blind", "lazy"}
+WALL_HEIGHTS = {30, 36, 42}
+
+app = FastAPI(title="KitchenStudio API")
+
+
+# --------------------------------------------------------------------------
+# database
+# --------------------------------------------------------------------------
+
+def _db():
+    fresh = not DB_PATH.exists()
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    if fresh:
+        # brand-new empty file: create the schema on this connection
+        _create_tables(conn)
+    return conn
+
+
+def _create_tables(conn):
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            pw_hash TEXT NOT NULL,
+            pw_salt TEXT NOT NULL,
+            created TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS sessions (
+            token TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            created TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS catalogs (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            name TEXT NOT NULL,
+            created TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS catalog_items (
+            id INTEGER PRIMARY KEY,
+            catalog_id INTEGER NOT NULL REFERENCES catalogs(id),
+            sku TEXT NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT NOT NULL,
+            width_in REAL NOT NULL,
+            height_in REAL NOT NULL,
+            depth_in REAL NOT NULL,
+            price REAL,
+            notes TEXT NOT NULL DEFAULT ''
+        );
+        CREATE INDEX IF NOT EXISTS idx_items_catalog
+            ON catalog_items(catalog_id);
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            catalog_id INTEGER NOT NULL REFERENCES catalogs(id),
+            name TEXT NOT NULL,
+            room_json TEXT NOT NULL,
+            design_json TEXT,
+            updated TEXT NOT NULL
+        );
+    """)
+    conn.commit()
+
+
+def init_db():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    conn = _db()
+    _create_tables(conn)
+    conn.close()
+
+
+@app.on_event("startup")
+def _startup():
+    init_db()
+
+
+# Also initialize at import time: init_db() is idempotent, and this makes
+# the app work when embedded without lifespan startup events running.
+init_db()
+
+
+def _now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+# --------------------------------------------------------------------------
+# auth helpers
+# --------------------------------------------------------------------------
+
+def _hash_pw(password, salt_hex):
+    salt = bytes.fromhex(salt_hex)
+    return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"),
+                               salt, 200_000).hex()
+
+
+def _bearer_token(request: Request):
+    auth = request.headers.get("authorization", "")
+    m = re.match(r"(?i)^bearer\s+(\S+)$", auth.strip())
+    return m.group(1) if m else None
+
+
+def _current_user(request: Request):
+    token = _bearer_token(request)
+    if not token:
+        return None
+    conn = _db()
+    try:
+        row = conn.execute(
+            "SELECT u.id, u.email, u.name FROM sessions s "
+            "JOIN users u ON u.id = s.user_id WHERE s.token = ?",
+            (token,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def _require_user(request: Request):
+    user = _current_user(request)
+    if user is None:
+        return None, JSONResponse(status_code=401,
+                                 content={"error": "unauthorized"})
+    return user, None
+
+
+def _err(status, message, **extra):
+    return JSONResponse(status_code=status,
+                        content={"error": message, **extra})
+
+
+# --------------------------------------------------------------------------
+# multipart parsing (stdlib only — no python-multipart dependency)
+# --------------------------------------------------------------------------
+
+def _parse_multipart(body: bytes, content_type: str):
+    """Parse multipart/form-data with stdlib. Returns
+    {name: (filename_or_None, bytes)}."""
+    m = re.search(r'boundary=([^;]+)', content_type or "")
+    if not m:
+        return {}
+    boundary = m.group(1).strip().strip('"').encode("ascii", "ignore")
+    fields = {}
+    for part in body.split(b"--" + boundary):
+        if part in (b"", b"--", b"--\r\n"):
+            continue
+        if part.startswith(b"\r\n"):
+            part = part[2:]
+        if part.endswith(b"--"):
+            part = part[:-2]
+        if part.endswith(b"\r\n"):
+            part = part[:-2]
+        if b"\r\n\r\n" not in part:
+            continue
+        head, content = part.split(b"\r\n\r\n", 1)
+        disp = ""
+        for line in head.decode("latin-1").split("\r\n"):
+            if line.lower().startswith("content-disposition:"):
+                disp = line.split(":", 1)[1]
+        nm = re.search(r'name="([^"]*)"', disp)
+        fn = re.search(r'filename="([^"]*)"', disp)
+        if not nm:
+            continue
+        fields[nm.group(1)] = (fn.group(1) if fn else None, content)
+    return fields
+
+
+# --------------------------------------------------------------------------
+# validation helpers
+# --------------------------------------------------------------------------
+
+def _is_num(v):
+    try:
+        float(v)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def validate_catalog_csv(text):
+    """Returns (rows, bad_rows). rows: list of dicts ready for insert."""
+    reader = csv.DictReader(io.StringIO(text))
+    if reader.fieldnames is None:
+        return [], [{"row": 1, "sku": "", "reason": "empty file"}]
+    missing = [c for c in CSV_COLUMNS if c not in reader.fieldnames]
+    if missing:
+        return [], [{"row": 1, "sku": "",
+                     "reason": f"missing columns: {', '.join(missing)}"}]
+    rows, bad, seen = [], [], set()
+    for i, rec in enumerate(reader, start=2):
+        sku = (rec.get("sku") or "").strip()
+        problems = []
+        if not sku:
+            problems.append("sku is empty")
+        elif sku in seen:
+            problems.append(f"duplicate sku '{sku}' in file")
+        seen.add(sku)
+        cat = (rec.get("category") or "").strip()
+        if cat not in CATEGORIES:
+            problems.append(f"category '{cat}' not in "
+                            f"{sorted(CATEGORIES)}")
+        for dim in ("width_in", "height_in", "depth_in"):
+            v = (rec.get(dim) or "").strip()
+            if not _is_num(v) or float(v) <= 0:
+                problems.append(f"{dim} must be numeric > 0 (got '{v}')")
+        price_raw = (rec.get("price") or "").strip()
+        price = None
+        if price_raw != "":
+            if not _is_num(price_raw) or float(price_raw) < 0:
+                problems.append(f"price must be numeric >= 0 (got "
+                                f"'{price_raw}')")
+            else:
+                price = float(price_raw)
+        if problems:
+            bad.append({"row": i, "sku": sku,
+                        "reason": "; ".join(problems)})
+            continue
+        rows.append({
+            "sku": sku, "category": cat,
+            "description": (rec.get("description") or "").strip(),
+            "width_in": float(rec["width_in"]),
+            "height_in": float(rec["height_in"]),
+            "depth_in": float(rec["depth_in"]),
+            "price": price,
+            "notes": (rec.get("notes") or "").strip(),
+        })
+    return rows, bad
+
+
+def validate_room(room):
+    """Loose room-shape validation. Returns error string or None."""
+    if not isinstance(room, dict):
+        return "room must be an object"
+    walls = room.get("walls")
+    if not isinstance(walls, list) or not walls:
+        return "room.walls must be a non-empty list"
+    for w in walls:
+        if not isinstance(w, dict) or "id" not in w:
+            return "each wall needs an id"
+        if not _is_num(w.get("length_in")) or float(w["length_in"]) <= 0:
+            return f"wall '{w.get('id')}' needs length_in > 0"
+        # contract shape: openings live on each wall; a legacy flat
+        # room.openings list (with wall_id) is also accepted.
+        wops = w.get("openings", [])
+        if not isinstance(wops, list):
+            return f"wall '{w.get('id')}' openings must be a list"
+        err = _validate_openings(wops)
+        if err:
+            return f"wall '{w.get('id')}': {err}"
+    openings = room.get("openings", [])
+    if not isinstance(openings, list):
+        return "room.openings must be a list"
+    err = _validate_openings(openings)
+    if err:
+        return err
+    return None
+
+
+def _validate_openings(openings):
+    """Validate a list of opening dicts. Returns error string or None."""
+    for op in openings:
+        if not isinstance(op, dict):
+            return "each opening must be an object"
+        if op.get("kind") not in {"window", "door", "opening"}:
+            return (f"opening kind must be one of window/door/opening "
+                    f"(got '{op.get('kind')}')")
+        for k in ("at_in", "width_in"):
+            if not _is_num(op.get(k)):
+                return f"opening needs numeric {k}"
+        for k in ("sill_in", "height_in"):
+            if k in op and op[k] not in (None, "") and not _is_num(op[k]):
+                return f"opening {k} must be numeric if given"
+    return None
+
+
+# --------------------------------------------------------------------------
+# auth routes
+# --------------------------------------------------------------------------
+
+@app.post("/api/auth/signup")
+async def signup(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        return _err(400, "invalid JSON body")
+    email = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+    name = (body.get("name") or "").strip()
+    if not email or not password or not name:
+        return _err(400, "email, password and name are required")
+    conn = _db()
+    try:
+        if conn.execute("SELECT id FROM users WHERE email = ?",
+                        (email,)).fetchone():
+            return _err(400, "email already registered")
+        salt = secrets.token_hex(16)
+        pw_hash = _hash_pw(password, salt)
+        cur = conn.execute(
+            "INSERT INTO users (email, name, pw_hash, pw_salt, created) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (email, name, pw_hash, salt, _now()))
+        user_id = cur.lastrowid
+        token = secrets.token_hex(32)
+        conn.execute("INSERT INTO sessions (token, user_id, created) "
+                     "VALUES (?, ?, ?)", (token, user_id, _now()))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"token": token,
+            "user": {"id": user_id, "email": email, "name": name}}
+
+
+@app.post("/api/auth/login")
+async def login(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        return _err(400, "invalid JSON body")
+    email = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+    conn = _db()
+    try:
+        row = conn.execute("SELECT * FROM users WHERE email = ?",
+                           (email,)).fetchone()
+        if row is None or _hash_pw(password, row["pw_salt"]) != row["pw_hash"]:
+            return _err(401, "invalid email or password")
+        token = secrets.token_hex(32)
+        conn.execute("INSERT INTO sessions (token, user_id, created) "
+                     "VALUES (?, ?, ?)", (token, row["id"], _now()))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"token": token,
+            "user": {"id": row["id"], "email": row["email"],
+                     "name": row["name"]}}
+
+
+@app.post("/api/auth/logout")
+async def logout(request: Request):
+    token = _bearer_token(request)
+    if token:
+        conn = _db()
+        try:
+            conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
+            conn.commit()
+        finally:
+            conn.close()
+    return {"ok": True}
+
+
+# --------------------------------------------------------------------------
+# catalog routes
+# --------------------------------------------------------------------------
+
+@app.get("/api/catalogs")
+async def list_catalogs(request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT c.id, c.name, c.created, COUNT(i.id) AS item_count "
+            "FROM catalogs c LEFT JOIN catalog_items i "
+            "ON i.catalog_id = c.id WHERE c.user_id = ? "
+            "GROUP BY c.id ORDER BY c.id",
+            (user["id"],)).fetchall()
+        return [{"id": r["id"], "name": r["name"],
+                 "item_count": r["item_count"], "created": r["created"]}
+                for r in rows]
+    finally:
+        conn.close()
+
+
+@app.post("/api/catalogs")
+async def upload_catalog(request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    ctype = request.headers.get("content-type", "")
+    if "multipart/form-data" not in ctype:
+        return _err(400, "expected multipart/form-data")
+    body = await request.body()
+    fields = _parse_multipart(body, ctype)
+    if "file" not in fields or fields["file"][0] is None:
+        return _err(400, "multipart field 'file' (CSV) is required")
+    if "name" not in fields:
+        return _err(400, "multipart field 'name' is required")
+    name = fields["name"][1].decode("utf-8", "replace").strip()
+    if not name:
+        return _err(400, "catalog name must not be empty")
+    try:
+        text = fields["file"][1].decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return _err(400, "CSV must be UTF-8 encoded")
+    rows, bad_rows = validate_catalog_csv(text)
+    if bad_rows:
+        return _err(400, "CSV validation failed", bad_rows=bad_rows)
+    conn = _db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO catalogs (user_id, name, created) VALUES (?, ?, ?)",
+            (user["id"], name, _now()))
+        catalog_id = cur.lastrowid
+        conn.executemany(
+            "INSERT INTO catalog_items (catalog_id, sku, category, "
+            "description, width_in, height_in, depth_in, price, notes) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [(catalog_id, r["sku"], r["category"], r["description"],
+              r["width_in"], r["height_in"], r["depth_in"], r["price"],
+              r["notes"]) for r in rows])
+        conn.commit()
+    finally:
+        conn.close()
+    return {"id": catalog_id, "item_count": len(rows)}
+
+
+@app.get("/api/catalogs/{catalog_id}")
+async def get_catalog(catalog_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    conn = _db()
+    try:
+        cat = conn.execute(
+            "SELECT id, name FROM catalogs WHERE id = ? AND user_id = ?",
+            (catalog_id, user["id"])).fetchone()
+        if cat is None:
+            return _err(404, "catalog not found")
+        items = conn.execute(
+            "SELECT sku, category, description, width_in, height_in, "
+            "depth_in, price, notes FROM catalog_items "
+            "WHERE catalog_id = ? ORDER BY id",
+            (catalog_id,)).fetchall()
+        return {"id": cat["id"], "name": cat["name"],
+                "items": [dict(i) for i in items]}
+    finally:
+        conn.close()
+
+
+@app.delete("/api/catalogs/{catalog_id}")
+async def delete_catalog(catalog_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    conn = _db()
+    try:
+        cat = conn.execute(
+            "SELECT id FROM catalogs WHERE id = ? AND user_id = ?",
+            (catalog_id, user["id"])).fetchone()
+        if cat is None:
+            return _err(404, "catalog not found")
+        refs = conn.execute(
+            "SELECT id, name FROM projects WHERE catalog_id = ?",
+            (catalog_id,)).fetchall()
+        if refs:
+            names = ", ".join(f"'{r['name']}' (id {r['id']})" for r in refs)
+            return _err(400, f"catalog is referenced by project(s): {names}; "
+                             f"delete or reassign those projects first")
+        conn.execute("DELETE FROM catalog_items WHERE catalog_id = ?",
+                     (catalog_id,))
+        conn.execute("DELETE FROM catalogs WHERE id = ?", (catalog_id,))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
+def _catalog_items_for(conn, catalog_id):
+    rows = conn.execute(
+        "SELECT sku, category, description, width_in, height_in, depth_in, "
+        "price, notes FROM catalog_items WHERE catalog_id = ?",
+        (catalog_id,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+# --------------------------------------------------------------------------
+# project routes
+# --------------------------------------------------------------------------
+
+@app.get("/api/projects")
+async def list_projects(request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT id, name, catalog_id, updated FROM projects "
+            "WHERE user_id = ? ORDER BY id",
+            (user["id"],)).fetchall()
+        return [{"id": r["id"], "name": r["name"],
+                 "catalog_id": r["catalog_id"], "updated": r["updated"]}
+                for r in rows]
+    finally:
+        conn.close()
+
+
+def _get_project(conn, project_id, user_id):
+    return conn.execute(
+        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+        (project_id, user_id)).fetchone()
+
+
+@app.post("/api/projects")
+async def create_project(request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    try:
+        body = await request.json()
+    except Exception:
+        return _err(400, "invalid JSON body")
+    name = (body.get("name") or "").strip()
+    catalog_id = body.get("catalog_id")
+    room = body.get("room")
+    if not name:
+        return _err(400, "name is required")
+    if not isinstance(catalog_id, int):
+        return _err(400, "catalog_id is required")
+    room_err = validate_room(room)
+    if room_err:
+        return _err(400, room_err)
+    conn = _db()
+    try:
+        cat = conn.execute(
+            "SELECT id FROM catalogs WHERE id = ? AND user_id = ?",
+            (catalog_id, user["id"])).fetchone()
+        if cat is None:
+            return _err(400, "catalog not found or not owned by you")
+        cur = conn.execute(
+            "INSERT INTO projects (user_id, catalog_id, name, room_json, "
+            "design_json, updated) VALUES (?, ?, ?, ?, NULL, ?)",
+            (user["id"], catalog_id, name, json.dumps(room), _now()))
+        conn.commit()
+        return {"id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+@app.get("/api/projects/{project_id}")
+async def get_project(project_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    conn = _db()
+    try:
+        p = _get_project(conn, project_id, user["id"])
+        if p is None:
+            return _err(404, "project not found")
+        return {"id": p["id"], "name": p["name"],
+                "catalog_id": p["catalog_id"],
+                "room": json.loads(p["room_json"]),
+                "design": json.loads(p["design_json"])
+                if p["design_json"] else None,
+                "updated": p["updated"]}
+    finally:
+        conn.close()
+
+
+@app.put("/api/projects/{project_id}")
+async def update_project(project_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    try:
+        body = await request.json()
+    except Exception:
+        return _err(400, "invalid JSON body")
+    conn = _db()
+    try:
+        p = _get_project(conn, project_id, user["id"])
+        if p is None:
+            return _err(404, "project not found")
+        updates, params = [], []
+        if "name" in body:
+            name = (body["name"] or "").strip()
+            if not name:
+                return _err(400, "name must not be empty")
+            updates.append("name = ?")
+            params.append(name)
+        if "room" in body:
+            room_err = validate_room(body["room"])
+            if room_err:
+                return _err(400, room_err)
+            updates.append("room_json = ?")
+            params.append(json.dumps(body["room"]))
+        if not updates:
+            return {"ok": True}
+        updates.append("updated = ?")
+        params.append(_now())
+        params.append(project_id)
+        conn.execute(f"UPDATE projects SET {', '.join(updates)} WHERE id = ?",
+                     params)
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
+@app.delete("/api/projects/{project_id}")
+async def delete_project(project_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    conn = _db()
+    try:
+        p = _get_project(conn, project_id, user["id"])
+        if p is None:
+            return _err(404, "project not found")
+        conn.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
+# --------------------------------------------------------------------------
+# autodesign + design + quote
+# --------------------------------------------------------------------------
+
+@app.post("/api/projects/{project_id}/autodesign")
+async def run_autodesign(project_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    try:
+        body = await request.json()
+    except Exception:
+        return _err(400, "invalid JSON body")
+    corner_style = body.get("corner_style")
+    wall_h = body.get("wall_cabinet_height")
+    if corner_style not in CORNER_STYLES:
+        return _err(400, f"corner_style must be one of "
+                         f"{sorted(CORNER_STYLES)}")
+    if wall_h not in WALL_HEIGHTS:
+        return _err(400, "wall_cabinet_height must be one of 30, 36, 42")
+    conn = _db()
+    try:
+        p = _get_project(conn, project_id, user["id"])
+        if p is None:
+            return _err(404, "project not found")
+        room = json.loads(p["room_json"])
+        items = _catalog_items_for(conn, p["catalog_id"])
+        design, warnings = autodesign(
+            room, items,
+            {"corner_style": corner_style, "wall_cabinet_height": wall_h})
+        conn.execute("UPDATE projects SET design_json = ?, updated = ? "
+                     "WHERE id = ?",
+                     (json.dumps(design), _now(), project_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"design": design, "warnings": warnings}
+
+
+def _validate_design(design, catalog_skus):
+    if not isinstance(design, dict):
+        return "design must be an object"
+    runs = design.get("runs")
+    if not isinstance(runs, list):
+        return "design.runs must be a list"
+    unknown = []
+    for run in runs:
+        if not isinstance(run, dict):
+            return "each run must be an object"
+        items = run.get("items")
+        if not isinstance(items, list):
+            return "each run.items must be a list"
+        for it in items:
+            if not isinstance(it, dict):
+                return "each design item must be an object"
+            for key in ("sku", "at_in", "width_in", "category", "level"):
+                if key not in it:
+                    return f"design item missing '{key}'"
+            if it["level"] not in ("base", "wall", "tall"):
+                return (f"design item level must be base/wall/tall "
+                        f"(got '{it['level']}')")
+            sku = str(it["sku"])
+            if sku not in catalog_skus and not APPLIANCE_RE.match(sku):
+                unknown.append(sku)
+    return unknown or None
+
+
+@app.put("/api/projects/{project_id}/design")
+async def save_design(project_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    try:
+        body = await request.json()
+    except Exception:
+        return _err(400, "invalid JSON body")
+    design = body.get("design")
+    conn = _db()
+    try:
+        p = _get_project(conn, project_id, user["id"])
+        if p is None:
+            return _err(404, "project not found")
+        catalog_skus = {r["sku"] for r in
+                        _catalog_items_for(conn, p["catalog_id"])}
+        problem = _validate_design(design, catalog_skus)
+        if isinstance(problem, str):
+            return _err(400, problem)
+        if problem:  # list of unknown SKUs
+            return _err(400, f"unknown SKUs: {', '.join(sorted(set(problem)))}",
+                         unknown_skus=sorted(set(problem)))
+        conn.execute("UPDATE projects SET design_json = ?, updated = ? "
+                     "WHERE id = ?",
+                     (json.dumps(design), _now(), project_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
+def _size_str(w, h, d):
+    return f"{w:g}\"W \u00d7 {h:g}\"H \u00d7 {d:g}\"D"
+
+
+def _placeholder_meta(sku):
+    m = re.match(r"^(RANGE|FRIDGE|DISHWASHER)-(\d+)$", sku)
+    if not m:
+        return None
+    kind, w = m.group(1), m.group(2)
+    label = {"RANGE": "Range", "FRIDGE": "Refrigerator",
+             "DISHWASHER": "Dishwasher"}[kind]
+    return (f"{label} {w}\"W (appliance placeholder)", f"{int(w):g}\"W")
+
+
+@app.get("/api/projects/{project_id}/quote")
+async def get_quote(project_id: int, request: Request):
+    user, err = _require_user(request)
+    if err:
+        return err
+    conn = _db()
+    try:
+        p = _get_project(conn, project_id, user["id"])
+        if p is None:
+            return _err(404, "project not found")
+        if not p["design_json"]:
+            return _err(400, "project has no design yet")
+        design = json.loads(p["design_json"])
+        catalog = {r["sku"]: r
+                   for r in _catalog_items_for(conn, p["catalog_id"])}
+
+        agg = {}
+        first_seen = {}
+        for run in design.get("runs", []):
+            for it in run.get("items", []):
+                sku = str(it["sku"])
+                agg[sku] = agg.get(sku, 0) + 1
+                if sku not in first_seen:
+                    first_seen[sku] = (it.get("level") or "",
+                                       it.get("category") or "")
+
+        lines = []
+        for sku, qty in agg.items():
+            level, category = first_seen[sku]
+            if sku in catalog:
+                c = catalog[sku]
+                unit = c["price"] if c["price"] is not None else 0.0
+                flag = None if c["price"] is not None else "price missing"
+                lines.append({
+                    "sku": sku,
+                    "description": c["description"],
+                    "size": _size_str(c["width_in"], c["height_in"],
+                                      c["depth_in"]),
+                    "qty": qty,
+                    "unit_price": unit,
+                    "line_total": round(unit * qty, 2),
+                    "flag": flag,
+                    "_level": level or "",
+                    "_category": category or c["category"],
+                })
+            else:
+                meta = _placeholder_meta(sku)
+                desc, size = meta if meta else (sku, "")
+                lines.append({
+                    "sku": sku,
+                    "description": desc,
+                    "size": size,
+                    "qty": qty,
+                    "unit_price": 0.0,
+                    "line_total": 0.0,
+                    "flag": "not a catalog item",
+                    "_level": level or "",
+                    "_category": category or "appliance",
+                })
+
+        level_rank = {"tall": 0, "base": 1, "wall": 2}
+        cat_rank = {"base": 0, "wall": 0, "tall": 0, "panel": 1, "filler": 2,
+                    "appliance": 3, "accessory": 4}
+        lines.sort(key=lambda l: (level_rank.get(l["_level"], 9),
+                                  cat_rank.get(l["_category"], 9),
+                                  l["sku"]))
+        for l in lines:
+            l.pop("_level", None)
+            l.pop("_category", None)
+        subtotal = round(sum(l["line_total"] for l in lines), 2)
+        return {"lines": lines, "subtotal": subtotal}
+    finally:
+        conn.close()
+
+
+# --------------------------------------------------------------------------
+# error handling + static frontend (mounted LAST so /api always wins)
+# --------------------------------------------------------------------------
+
+@app.exception_handler(Exception)
+async def _unhandled(request: Request, exc: Exception):
+    return JSONResponse(status_code=500,
+                        content={"error": "internal server error"})
+
+
+if FRONTEND_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True),
+              name="static")
+
+"""Billing stub — Stripe subscription integration (TODO for v2).
+
+Planned:
+  - Plans: e.g. "starter" (N projects), "pro" (unlimited projects,
+    CSV catalog uploads), "team".
+  - Checkout: Stripe Checkout Sessions created from the frontend's
+    "Upgrade" button, redirecting back to /billing/success.
+  - Webhook: POST /api/billing/webhook verifies the Stripe signature
+    (stripe.Webhook.construct_event) and handles
+    checkout.session.completed / customer.subscription.updated|deleted,
+    persisting the subscription state per user.
+  - Entitlements: a subscriptions table keyed by user_id consulted by
+    the catalog/project routes to enforce plan limits.
+
+No real logic yet — adding Stripe also means adding the `stripe` package
+to backend/requirements.txt and STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET
+to the deployment environment.
+"""
+
+PLANS = {
+    # "starter": {"price_id": "price_...", "projects": 3, "catalogs": 1},
+    # "pro":     {"price_id": "price_...", "projects": -1, "catalogs": -1},
+}
+
+
+def get_subscription(user_id):
+    """Return the user's subscription record, or None. TODO."""
+    raise NotImplementedError("Stripe integration not implemented yet")
+
+
+def create_checkout_session(user_id, plan):
+    """Create a Stripe Checkout Session for plan. TODO."""
+    raise NotImplementedError("Stripe integration not implemented yet")
+
+
+def handle_webhook(payload, signature):
+    """Verify + apply a Stripe webhook event. TODO."""
+    raise NotImplementedError("Stripe integration not implemented yet")
+
+#!/usr/bin/env python3
+"""End-to-end API test: signup -> login -> upload seed CSV -> create project
+-> autodesign -> quote, plus error-path checks. Uses FastAPI TestClient.
+
+Run from the repo root:  /tmp/ksvenv/bin/python backend/e2e_test.py
+"""
+import json
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
+
+from fastapi.testclient import TestClient  # noqa: E402
+from backend.app import app, DB_PATH  # noqa: E402
+
+# start from a clean database
+if DB_PATH.exists():
+    DB_PATH.unlink()
+
+client = TestClient(app, raise_server_exceptions=False)
+passed = []
+
+
+def check(name, cond, detail=""):
+    assert cond, f"FAIL: {name} {detail}"
+    passed.append(name)
+    print(f"  ok: {name}")
+
+
+print("== auth ==")
+r = client.post("/api/auth/signup", json={"email": "v@example.com",
+                                          "password": "secret123",
+                                          "name": "Varun"})
+check("signup 200", r.status_code == 200, r.text)
+token = r.json()["token"]
+check("signup returns user", r.json()["user"]["email"] == "v@example.com")
+
+r = client.post("/api/auth/signup", json={"email": "v@example.com",
+                                          "password": "x", "name": "Dup"})
+check("duplicate email 400", r.status_code == 400, r.text)
+
+r = client.post("/api/auth/login", json={"email": "v@example.com",
+                                         "password": "secret123"})
+check("login 200", r.status_code == 200, r.text)
+token2 = r.json()["token"]
+
+r = client.post("/api/auth/login", json={"email": "v@example.com",
+                                         "password": "wrong"})
+check("bad password 401", r.status_code == 401, r.text)
+
+r = client.get("/api/catalogs")
+check("no token 401", r.status_code == 401, r.text)
+
+H = {"Authorization": f"Bearer {token}"}
+H2 = {"Authorization": f"Bearer {token2}"}
+
+print("== catalogs ==")
+csv_text = (REPO / "catalogs" / "oppein_rta.csv").read_text()
+r = client.post("/api/catalogs", headers=H,
+                files={"file": ("oppein_rta.csv", csv_text, "text/csv")},
+                data={"name": "Oppein RTA"})
+check("upload seed csv 200", r.status_code == 200, r.text)
+check("seed item_count 91", r.json()["item_count"] == 91, r.text)
+cat_id = r.json()["id"]
+
+r = client.get("/api/catalogs", headers=H)
+check("list catalogs", r.status_code == 200 and
+      r.json()[0]["item_count"] == 91, r.text)
+
+r = client.get(f"/api/catalogs/{cat_id}", headers=H)
+check("get catalog items", r.status_code == 200 and
+      len(r.json()["items"]) == 91, r.text)
+check("catalog item shape",
+      set(r.json()["items"][0]) == {"sku", "category", "description",
+                                    "width_in", "height_in", "depth_in",
+                                    "price", "notes"})
+
+bad_csv = ("sku,category,description,width_in,height_in,depth_in,price,notes\n"
+           "B12,base,ok cab,12,30,23.88,,\n"
+           "B12,wall,dup sku,12,30,12,,\n"
+           ",base,empty sku,12,30,12,,\n"
+           "BX1,bogus,bad cat,12,30,12,,\n"
+           "BX2,base,bad dim,-5,30,12,,\n"
+           "BX3,base,bad price,12,30,12,-3,\n")
+r = client.post("/api/catalogs", headers=H,
+                files={"file": ("bad.csv", bad_csv, "text/csv")},
+                data={"name": "Bad"})
+check("bad csv 400", r.status_code == 400, r.text)
+br = r.json()["bad_rows"]
+check("bad_rows detail", len(br) == 5 and br[0]["row"] == 3 and
+      br[0]["sku"] == "B12", json.dumps(br))
+r = client.get("/api/catalogs", headers=H)
+check("bad upload atomic (still 1 catalog)", len(r.json()) == 1, r.text)
+
+print("== projects ==")
+room = {
+    "walls": [{"id": "A", "length_in": 168},
+              {"id": "B", "length_in": 120}],
+    "openings": [
+        {"wall_id": "A", "at_in": 66, "width_in": 36, "kind": "window"},
+        {"wall_id": "B", "at_in": 72, "width_in": 36, "kind": "door"}],
+    "ceiling_in": 96,
+    "appliances": {"range_in": 30, "fridge_in": 36,
+                   "dishwasher": True, "microwave": True},
+}
+r = client.post("/api/projects", headers=H,
+                json={"name": "Smith kitchen", "catalog_id": cat_id,
+                      "room": room})
+check("create project", r.status_code == 200, r.text)
+proj_id = r.json()["id"]
+
+r = client.post("/api/projects", headers=H,
+                json={"name": "x", "catalog_id": 9999, "room": room})
+check("bad catalog 400", r.status_code == 400, r.text)
+
+r = client.post("/api/projects", headers=H,
+                json={"name": "x", "catalog_id": cat_id,
+                      "room": {"walls": []}})
+check("bad room 400", r.status_code == 400, r.text)
+
+r = client.get("/api/projects", headers=H)
+check("list projects", r.status_code == 200 and
+      r.json()[0]["name"] == "Smith kitchen", r.text)
+
+r = client.get(f"/api/projects/{proj_id}", headers=H)
+check("get project design null", r.status_code == 200 and
+      r.json()["design"] is None and r.json()["room"]["walls"][0]["id"] == "A",
+      r.text)
+
+r = client.put(f"/api/projects/{proj_id}", headers=H,
+               json={"name": "Smith kitchen v2"})
+check("partial update", r.status_code == 200, r.text)
+r = client.get(f"/api/projects/{proj_id}", headers=H)
+check("name updated", r.json()["name"] == "Smith kitchen v2", r.text)
+
+print("== autodesign ==")
+r = client.post(f"/api/projects/{proj_id}/autodesign", headers=H,
+                json={"corner_style": "easy", "wall_cabinet_height": 36})
+check("autodesign 200", r.status_code == 200, r.text)
+design = r.json()["design"]
+check("design version+runs", design["version"] == 1 and
+      len(design["runs"]) == 2, r.text[:200])
+check("warnings list", isinstance(r.json()["warnings"], list))
+r = client.get(f"/api/projects/{proj_id}", headers=H)
+check("design saved on project", r.json()["design"] == design)
+
+r = client.post(f"/api/projects/{proj_id}/autodesign", headers=H,
+                json={"corner_style": "weird", "wall_cabinet_height": 36})
+check("bad corner_style 400", r.status_code == 400, r.text)
+r = client.post(f"/api/projects/{proj_id}/autodesign", headers=H,
+                json={"corner_style": "blind", "wall_cabinet_height": 42})
+check("blind/42 works", r.status_code == 200, r.text)
+# restore the easy/36 design for the quote checks below
+r = client.post(f"/api/projects/{proj_id}/autodesign", headers=H,
+                json={"corner_style": "easy", "wall_cabinet_height": 36})
+design = r.json()["design"]
+
+print("== design save/validation ==")
+bad_design = {"runs": [{"wall_id": "A", "items": [
+    {"sku": "NOPE-1", "at_in": 0, "width_in": 12,
+     "category": "base", "level": "base"}]}]}
+r = client.put(f"/api/projects/{proj_id}/design", headers=H,
+               json={"design": bad_design})
+check("unknown sku 400", r.status_code == 400 and
+      "NOPE-1" in r.text, r.text)
+
+ok_design = {"runs": [{"wall_id": "A", "items": [
+    {"sku": "B30", "at_in": 3, "width_in": 30,
+     "category": "base", "level": "base"},
+    {"sku": "RANGE-30", "at_in": 33, "width_in": 30,
+     "category": "appliance", "level": "base"}]}],
+    "version": 1}
+r = client.put(f"/api/projects/{proj_id}/design", headers=H,
+               json={"design": ok_design})
+check("save design ok", r.status_code == 200, r.text)
+# put the autodesign back for the quote test
+r = client.put(f"/api/projects/{proj_id}/design", headers=H,
+               json={"design": design})
+check("restore autodesign", r.status_code == 200, r.text)
+
+print("== quote ==")
+r = client.get(f"/api/projects/{proj_id}/quote", headers=H)
+check("quote 200", r.status_code == 200, r.text)
+q = r.json()
+check("quote lines+subtotal", "lines" in q and "subtotal" in q)
+line = q["lines"][0]
+check("line shape", set(line) == {"sku", "description", "size", "qty",
+                                  "unit_price", "line_total", "flag"}, str(line))
+check("size format", "W \u00d7" in line["size"] and "\"D" in line["size"],
+      line["size"])
+flags = {l["sku"]: l["flag"] for l in q["lines"]}
+check("seed price missing flagged",
+      any(v == "price missing" for v in flags.values()))
+check("appliance placeholder flagged",
+      flags.get("RANGE-30") == "not a catalog item", str(flags.get("RANGE-30")))
+check("subtotal number", isinstance(q["subtotal"], (int, float)))
+# sort order: tall,base,wall levels
+levels = []
+seen = set()
+for l in q["lines"]:
+    pass
+print(f"  quote: {len(q['lines'])} lines, subtotal {q['subtotal']}")
+
+print("== delete guards ==")
+r = client.delete(f"/api/catalogs/{cat_id}", headers=H)
+check("delete referenced catalog 400", r.status_code == 400, r.text)
+
+r = client.delete(f"/api/projects/{proj_id}", headers=H)
+check("delete project", r.status_code == 200, r.text)
+r = client.get(f"/api/projects/{proj_id}", headers=H)
+check("project gone 404", r.status_code == 404, r.text)
+r = client.delete(f"/api/catalogs/{cat_id}", headers=H)
+check("delete unreferenced catalog", r.status_code == 200, r.text)
+
+print("== logout ==")
+r = client.post("/api/auth/logout", headers=H)
+check("logout", r.status_code == 200 and r.json() == {"ok": True}, r.text)
+r = client.get("/api/projects", headers=H)
+check("token invalid after logout", r.status_code == 401, r.text)
+r = client.get("/api/projects", headers=H2)
+check("second session still valid", r.status_code == 200, r.text)
+
+print(f"\nALL {len(passed)} CHECKS PASSED")
+
+"""Deterministic auto-design layout engine (the "AI draft").
+
+Given a room shape, a catalog item list, and options, produces a cabinet
+layout per wall following the Oppein design rules
+(~/workspace/skills/oppein-kitchen-designer/references/design-rules.md).
+
+Rules applied here (simplified, documented deviations):
+- Walls connect in order: wall[i]'s end meets wall[i+1]'s start.
+- Corner allowance at joined ends depends on corner_style
+  (easy: 36", lazy: 36", blind: 42" on the blind side + 3" other side).
+- Exposed (non-joined) run ends get a 3" filler so doors/drawers clear walls.
+- Base runs skip door/opening spans; wall runs additionally skip window spans.
+- Sink base centered on a window when one exists in the base run.
+- Dishwasher (24") adjacent to sink; range with >=12" landing each side when
+  possible; fridge at a run end flanked by REF panels; tall pantry when >=18"
+  is free at a run end; remaining gaps filled with 3-drawer bases near the
+  range and door bases elsewhere, then fillers; <3" leftovers are warnings.
+- Wall run mirrors the base layout with wall-height SKUs, skipping spans
+  above range / fridge / windows / doors.
+- NEVER invents SKUs: only SKUs present in catalog_items are emitted
+  (plus appliance placeholders RANGE-{w}, FRIDGE-{w}, DISHWASHER-24).
+"""
+
+import re
+
+APPLIANCE_RE = re.compile(r"^(RANGE-\d+|FRIDGE-\d+|DISHWASHER-24)$")
+
+CORNER_TAKE = {"easy": 36.0, "lazy": 36.0, "blind": 42.0}
+CORNER_PREFIX = {"easy": "BER", "lazy": "BLS", "blind": "BBC"}
+WALL_CORNER_PREFIX = {"easy": "WER", "lazy": "WER", "blind": "WBC"}
+
+EXPOSED_FILLER_W = 3.0
+PANEL_W = 0.75
+
+
+# --------------------------------------------------------------------------
+# catalog helpers
+# --------------------------------------------------------------------------
+
+def _num(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+class Catalog:
+    """Width-indexed lookup over catalog items. Never invents SKUs."""
+
+    def __init__(self, items):
+        self.items = items or []
+        self.by_cat = {}
+        for it in self.items:
+            self.by_cat.setdefault(it.get("category"), []).append(it)
+        for lst in self.by_cat.values():
+            lst.sort(key=lambda i: (_num(i.get("width_in")) or 0))
+
+    def pick(self, category, max_w, height=None, prefix=None, min_w=0.0):
+        """Largest-width item in category with width <= max_w (>= min_w),
+        optionally filtered by height and sku prefix. None if no fit."""
+        best = None
+        for it in self.by_cat.get(category, []):
+            w = _num(it.get("width_in"))
+            if w is None or w > max_w + 1e-9 or w < min_w - 1e-9:
+                continue
+            if height is not None and _num(it.get("height_in")) != float(height):
+                continue
+            if prefix is not None and not str(it.get("sku", "")).startswith(prefix):
+                continue
+            if best is None or w > (_num(best.get("width_in")) or 0):
+                best = it
+        return best
+
+    def has(self, sku):
+        return any(str(it.get("sku")) == sku for it in self.items)
+
+
+# --------------------------------------------------------------------------
+# span helpers
+# --------------------------------------------------------------------------
+
+def _subtract(spans, cut):
+    """Subtract interval cut=(cs,ce) from a list of (s,e) spans."""
+    cs, ce = cut
+    out = []
+    for s, e in spans:
+        if ce <= s or cs >= e:
+            out.append((s, e))
+            continue
+        if cs > s:
+            out.append((s, cs))
+        if ce < e:
+            out.append((ce, e))
+    return out
+
+
+def _free_spans(lo, hi, openings, kinds):
+    spans = [(lo, hi)]
+    for op in openings:
+        if op.get("kind") not in kinds:
+            continue
+        a = _num(op.get("at_in")) or 0.0
+        w = _num(op.get("width_in")) or 0.0
+        spans = _subtract(spans, (a, a + w))
+    return [(round(s, 2), round(e, 2)) for s, e in spans if e - s > 1e-9]
+
+
+def _item(sku, at_in, width_in, category, level):
+    return {
+        "sku": sku,
+        "at_in": round(float(at_in), 2),
+        "width_in": round(float(width_in), 2),
+        "category": category,
+        "level": level,
+    }
+
+
+# --------------------------------------------------------------------------
+# base run layout
+# --------------------------------------------------------------------------
+
+def _base_corner(cat, style, warnings, wall_id, at_corner, take, is_start):
+    """Place a corner cabinet at a joined corner. Returns (item, take_used)."""
+    prefix = CORNER_PREFIX[style]
+    cab = cat.pick("base", take, prefix=prefix)
+    if cab is None:
+        warnings.append(
+            f"Wall {wall_id}: no {style} corner cabinet in catalog; "
+            f"used 3\" filler at corner instead")
+        filler = cat.pick("filler", EXPOSED_FILLER_W)
+        if filler:
+            pos = at_corner if is_start else at_corner + take - EXPOSED_FILLER_W
+            return _item(filler["sku"], pos, EXPOSED_FILLER_W, "filler", "base"), take
+        warnings.append(f"Wall {wall_id}: missing filler SKU for corner")
+        return None, take
+    w = _num(cab["width_in"])
+    pos = at_corner if is_start else at_corner - w
+    return _item(cab["sku"], pos, w, "base", "base"), take
+
+
+def _filler(cat, width, level, warnings, wall_id):
+    sku = None
+    if width <= 3.0 + 1e-9:
+        f = cat.pick("filler", 3.0)
+    elif width <= 6.0 + 1e-9:
+        f = cat.pick("filler", 6.0)
+    else:
+        f = None
+    if f is None:
+        warnings.append(f"Wall {wall_id}: missing filler SKU for {width:g}\" gap")
+        return None
+    return f["sku"]
+
+
+def _base_candidates(cat, rem, want_drawers):
+    """Candidate base cabinets (width desc) that fit in rem.
+
+    want_drawers=True prefers 3-drawer bases; otherwise door bases (B__).
+    Specialty SKUs (BER/BLS/BBC/BTC/BSR/BMC/SB...) are never used as filler."""
+    pool = cat.by_cat.get("base", [])
+    if want_drawers:
+        cands = [c for c in pool
+                 if str(c.get("sku", "")).startswith("3DB")
+                 and (_num(c.get("width_in")) or 0) <= rem + 1e-9]
+    else:
+        cands = [c for c in pool
+                 if re.fullmatch(r"B\d+", str(c.get("sku", "")))
+                 and (_num(c.get("width_in")) or 0) <= rem + 1e-9]
+    cands.sort(key=lambda c: _num(c.get("width_in")) or 0, reverse=True)
+    return cands
+
+
+def _fill_segment(cat, seg, items, warnings, wall_id, level, near_range,
+                  drawer_ok=True):
+    """Greedy fill of a free (s,e) segment with cabinets then fillers."""
+    s, e = seg
+    pos = s
+    rem = e - s
+    while rem >= 12.0 - 1e-9:
+        cands = _base_candidates(cat, rem, drawer_ok and near_range)
+        if not cands and drawer_ok and near_range:
+            cands = _base_candidates(cat, rem, False)
+        if not cands:
+            break
+        cab = cands[0]
+        w = _num(cab["width_in"])
+        items.append(_item(cab["sku"], pos, w, "base", level))
+        pos += w
+        rem -= w
+    # fillers for the rest
+    while rem >= 3.0 - 1e-9:
+        if rem >= 6.0 - 1e-9:
+            sku = _filler(cat, 6.0, level, warnings, wall_id)
+            fw = 6.0 if sku else 0.0
+        else:
+            sku = _filler(cat, 3.0, level, warnings, wall_id)
+            fw = 3.0 if sku else 0.0
+        if not sku:
+            break
+        items.append(_item(sku, pos, fw, "filler", level))
+        pos += fw
+        rem -= fw
+    if rem > 0.05:
+        warnings.append(
+            f"Wall {wall_id}: unfillable gap of {rem:.1f}\" "
+            f"at {pos:.1f}\" (under 3\", no filler fits)")
+
+
+def _base_shell(cat, wall, style, warnings):
+    """Corner cabinets + exposed-end fillers for one wall.
+
+    Returns (items, lo, hi): the fixed shell and the remaining run bounds.
+    """
+    wid = wall["id"]
+    L = _num(wall["length_in"])
+    items = []
+    lo, hi = 0.0, L
+    joined_start = wall.get("_joined_start", False)
+    joined_end = wall.get("_joined_end", False)
+    take = CORNER_TAKE[style]
+
+    if joined_start:
+        if style == "blind":
+            # 3" filler on the non-blind side of a blind corner
+            sku = _filler(cat, 3.0, "base", warnings, wid)
+            if sku:
+                items.append(_item(sku, 0.0, 3.0, "filler", "base"))
+            lo += 3.0
+        else:
+            it, used = _base_corner(cat, style, warnings, wid, 0.0, take, True)
+            if it:
+                items.append(it)
+            lo += used
+    else:
+        sku = _filler(cat, 3.0, "base", warnings, wid)
+        if sku:
+            items.append(_item(sku, 0.0, 3.0, "filler", "base"))
+        lo += EXPOSED_FILLER_W
+
+    if joined_end:
+        it, used = _base_corner(cat, style, warnings, wid, L, take, False)
+        if it:
+            items.append(it)
+        hi -= used
+    else:
+        sku = _filler(cat, 3.0, "base", warnings, wid)
+        if sku:
+            items.append(_item(sku, L - 3.0, 3.0, "filler", "base"))
+        hi -= EXPOSED_FILLER_W
+
+    if hi - lo < 12:
+        warnings.append(f"Wall {wid}: tight run ({hi - lo:.0f}\" usable)")
+    if L < 60:
+        warnings.append(f"Wall {wid}: tight run ({L:.0f}\" wall)")
+    return items, lo, hi
+
+
+def _new_state(wall, openings, items, lo, hi):
+    spans = _free_spans(lo, hi, openings, {"door", "opening"})
+    return {"wall": wall, "id": wall["id"], "openings": openings,
+            "items": items, "lo": lo, "hi": hi, "spans": spans,
+            "sink_at": None, "sink_w": 0.0,
+            "range_at": None, "range_w": 0.0}
+
+
+def _cut(st, a, b):
+    st["spans"] = [(round(s, 2), round(e, 2))
+                   for s, e in _subtract(st["spans"], (a, b))]
+
+
+def _place_fridge(cat, states, fridge_w, warnings):
+    """One fridge per design, at the first exposed run end that fits."""
+    if not fridge_w:
+        return
+    ref = (cat.pick("panel", 24.75, prefix="REF")
+           or cat.pick("panel", 99.0, prefix="REF"))
+    need = fridge_w + 2 * PANEL_W
+    for st in states:
+        lo, hi = st["lo"], st["hi"]
+        wid = st["id"]
+        slots = []
+        if not st["wall"].get("_joined_start"):
+            slots.append(lo)          # exposed start
+        if not st["wall"].get("_joined_end"):
+            slots.append(hi - need)   # exposed end
+        for fat in slots:
+            for s, e in st["spans"]:
+                if fat >= s - 1e-9 and fat + need <= e + 1e-9:
+                    st["items"].append(_item(
+                        f"FRIDGE-{int(fridge_w)}", fat + PANEL_W,
+                        fridge_w, "appliance", "base"))
+                    if ref:
+                        st["items"].append(_item(ref["sku"], fat, PANEL_W,
+                                                "panel", "tall"))
+                        st["items"].append(_item(
+                            ref["sku"], fat + PANEL_W + fridge_w, PANEL_W,
+                            "panel", "tall"))
+                    else:
+                        warnings.append(
+                            f"Wall {wid}: no REF panel in catalog to flank "
+                            f"fridge")
+                    _cut(st, fat, fat + need)
+                    return
+    warnings.append(f"No exposed run end fits a {fridge_w:g}\" fridge")
+
+
+def _place_sinks(cat, states, warnings):
+    """Sink base centered on a window when the run has one.
+
+    Walls without a window get no sink; if the room has no window at all,
+    one sink goes near the middle of the longest run (with a warning).
+    """
+    sink_cands = [c for c in cat.by_cat.get("base", [])
+                  if re.fullmatch(r"SB\d+", str(c.get("sku", "")))]
+    sink_cands.sort(key=lambda c: _num(c.get("width_in")) or 0,
+                    reverse=True)  # largest fitting first
+
+    def drop(st, center):
+        spans = st["spans"]
+        tgt = None
+        for s, e in spans:
+            if s - 1e-9 <= center <= e + 1e-9:
+                tgt = (s, e)
+                break
+        if tgt is None and spans:
+            tgt = max(spans, key=lambda se: se[1] - se[0])
+        if tgt is None:
+            return False
+        s, e = tgt
+        c = min(max(center, s), e)
+        for cand in sink_cands:
+            w = _num(cand["width_in"])
+            if w <= (e - s) + 1e-9:
+                at = min(max(c - w / 2, s), e - w)
+                st["items"].append(_item(cand["sku"], at, w, "base", "base"))
+                st["sink_at"], st["sink_w"] = at, w
+                _cut(st, at, at + w)
+                return True
+        return False
+
+    placed = 0
+    for st in states:
+        lo, hi = st["lo"], st["hi"]
+        wins = [op for op in st["openings"]
+                if op.get("kind") == "window"
+                and (_num(op.get("at_in")) or 0) >= lo
+                and (_num(op.get("at_in")) or 0)
+                + (_num(op.get("width_in")) or 0) <= hi]
+        if not wins:
+            continue
+        w0 = wins[0]
+        wc = (_num(w0.get("at_in")) or 0) + (_num(w0.get("width_in")) or 0) / 2
+        if drop(st, wc):
+            placed += 1
+        else:
+            warnings.append(
+                f"Wall {st['id']}: window present but no sink base fits")
+    if placed == 0:
+        warnings.append("No window in room; sink placed without a window")
+        best = None
+        for st in states:
+            for s, e in st["spans"]:
+                if best is None or (e - s) > (best[2] - best[1]):
+                    best = (st, s, e)
+        if best:
+            st, s, e = best
+            if not drop(st, (s + e) / 2):
+                warnings.append("No sink base fits anywhere")
+
+
+def _place_dishwashers(cat, states, warnings, want):
+    """Dishwasher placeholder immediately adjacent to each sink."""
+    if not want:
+        return
+    for st in states:
+        if st["sink_at"] is None:
+            continue
+        wid = st["id"]
+        dw_w = 24.0
+        placed = False
+        for side_at in (st["sink_at"] + st["sink_w"],   # right of sink
+                        st["sink_at"] - dw_w):          # left of sink
+            for s, e in st["spans"]:
+                if side_at >= s - 1e-9 and side_at + dw_w <= e + 1e-9:
+                    st["items"].append(_item("DISHWASHER-24", side_at, dw_w,
+                                             "appliance", "base"))
+                    _cut(st, side_at, side_at + dw_w)
+                    # DWEP3 panel on the outer (non-sink) side, only when
+                    # it does not strand an unfillable sliver
+                    dw_panel = cat.pick("panel", 24.75, prefix="DWEP3")
+                    if dw_panel:
+                        if side_at > st["sink_at"]:
+                            pat = side_at + dw_w
+                            seg = next(((a, b) for a, b in st["spans"]
+                                        if abs(a - pat) < 1e-9), None)
+                        else:
+                            pat = side_at - PANEL_W
+                            seg = next(((a, b) for a, b in st["spans"]
+                                        if abs(b - side_at) < 1e-9), None)
+                        if seg and (seg[1] - seg[0] - PANEL_W >= 3.0 - 1e-9
+                                    or seg[1] - seg[0] - PANEL_W <= 0.05):
+                            st["items"].append(_item(dw_panel["sku"], pat,
+                                                     PANEL_W, "panel", "base"))
+                            _cut(st, pat, pat + PANEL_W)
+                    placed = True
+                    break
+            if placed:
+                break
+        if not placed:
+            warnings.append(f"Wall {wid}: no room for dishwasher beside sink")
+
+
+def _place_range(states, range_w, warnings):
+    """One range per design, on the first wall with a fitting segment."""
+    if not range_w:
+        return
+    for st in states:
+        cands = sorted(st["spans"], key=lambda se: se[1] - se[0],
+                       reverse=True)
+        for s, e in cands:
+            seg = e - s
+            if seg < range_w - 1e-9:
+                continue
+            at = s + (seg - range_w) / 2
+            if seg < range_w + 24 - 1e-9:
+                warnings.append(
+                    f"Wall {st['id']}: range placed with less than 12\" "
+                    f"landing on one side")
+            st["items"].append(_item(f"RANGE-{int(range_w)}", at, range_w,
+                                     "appliance", "base"))
+            st["range_at"], st["range_w"] = at, range_w
+            _cut(st, at, at + range_w)
+            return
+    warnings.append(f"No room for a {range_w:g}\" range on any wall")
+
+
+def _finish_base_run(cat, st, room, warnings):
+    """Tall pantry at a run end, then greedy gap fill."""
+    wid = st["id"]
+    lo, hi = st["lo"], st["hi"]
+    items = st["items"]
+    spans = st["spans"]
+
+    ceiling = _num(room.get("ceiling_in")) or 96.0
+    tall_cands = [c for c in cat.by_cat.get("tall", [])
+                  if str(c.get("sku", "")).startswith("PC")]
+    if tall_cands:
+        target_h = ceiling - 2.0
+        for s, e in sorted(spans, key=lambda se: se[1] - se[0],
+                           reverse=True):
+            at_end = abs(s - lo) < 1e-9 or abs(e - hi) < 1e-9
+            if not at_end or e - s < 18 - 1e-9:
+                continue
+            best = min(tall_cands,
+                       key=lambda c: (abs((_num(c.get("height_in")) or 0)
+                                          - target_h),
+                                      -(_num(c.get("width_in")) or 0)))
+            tw = _num(best["width_in"])
+            if tw <= e - s + 1e-9:
+                tat = (e - tw) if abs(e - hi) < 1e-9 else s
+                items.append(_item(best["sku"], tat, tw, "tall", "tall"))
+                spans = _subtract(spans, (tat, tat + tw))
+                break
+
+    r_at, r_w = st["range_at"], st["range_w"]
+    for s, e in sorted(spans):
+        near = (r_at is not None
+                and not (e < r_at - 36 - 1e-9
+                         or s > r_at + r_w + 36 + 1e-9))
+        _fill_segment(cat, (s, e), items, warnings, wid, "base", near)
+
+    items.sort(key=lambda i: i["at_in"])
+    return items, {"sink_at": st["sink_at"], "sink_w": st["sink_w"],
+                   "range_at": st["range_at"], "range_w": st["range_w"],
+                   "wall_id": wid}
+
+
+# --------------------------------------------------------------------------
+# wall run layout (mirrors base)
+# --------------------------------------------------------------------------
+
+def layout_wall_run(cat, base_items, base_meta, wall, openings, style,
+                    wall_h, microwave, warnings):
+    wid = wall["id"]
+    L = _num(wall["length_in"])
+    items = []
+
+    # wall runs skip window/door/opening spans entirely
+    excl_cuts = []
+    for op in openings:
+        if op.get("kind") in {"window", "door", "opening"}:
+            a = _num(op.get("at_in")) or 0.0
+            excl_cuts.append((a, a + (_num(op.get("width_in")) or 0.0)))
+
+    wall_cabs = [c for c in cat.by_cat.get("wall", [])
+                 if _num(c.get("height_in")) == float(wall_h)]
+    if not wall_cabs:
+        warnings.append(f"Wall {wid}: no {wall_h}\"H wall cabinets in catalog; "
+                        f"wall run skipped")
+        return items
+    wc = Catalog([dict(it, category="wall") for it in wall_cabs])
+
+    def wall_fill(s, e):
+        """Fill (s,e) minus exclusions with wall cabs + fillers."""
+        spans = [(s, e)]
+        for cut in excl_cuts:
+            spans = _subtract(spans, cut)
+        for a, b in sorted(spans):
+            pos, rem = a, b - a
+            while rem >= 12.0 - 1e-9:
+                cab = wc.pick("wall", rem)
+                if cab is None:
+                    break
+                w = _num(cab["width_in"])
+                items.append(_item(cab["sku"], pos, w, "wall", "wall"))
+                pos += w
+                rem -= w
+            while rem >= 3.0 - 1e-9:
+                fw = 6.0 if rem >= 6.0 - 1e-9 else 3.0
+                fh = cat.pick("filler", fw, height=wall_h) \
+                    or cat.pick("filler", fw)
+                if fh is None:
+                    warnings.append(
+                        f"Wall {wid}: missing filler SKU for {fw:g}\" gap")
+                    break
+                items.append(_item(fh["sku"], pos, fw, "filler", "wall"))
+                pos += fw
+                rem -= fw
+            if rem > 0.05:
+                warnings.append(
+                    f"Wall {wid}: unfillable wall gap of {rem:.1f}\" "
+                    f"at {pos:.1f}\"")
+
+    joined_start = wall.get("_joined_start", False)
+    joined_end = wall.get("_joined_end", False)
+
+    for bi in base_items:
+        bsku = str(bi["sku"])
+        s, w = bi["at_in"], bi["width_in"]
+        bcat = bi["category"]
+        if bcat == "filler":
+            wall_fill(s, s + w)
+            continue
+        if bcat == "panel":
+            continue  # panels handled on base/tall levels
+        if bcat == "tall":
+            continue  # tall cabinets reach the ceiling; no wall cab above
+        if bcat == "appliance":
+            if bsku.startswith("RANGE-"):
+                if microwave:
+                    rw = _num(bsku.split("-")[1])
+                    # microwave cabs are 18"H regardless of wall_h
+                    for mw in ("WMC3018", "WMC2418"):
+                        mc = next((c for c in cat.by_cat.get("wall", [])
+                                   if str(c.get("sku")) == mw), None)
+                        if mc and _num(mc["width_in"]) <= rw + 1e-9:
+                            mat = s + (rw - _num(mc["width_in"])) / 2
+                            items.append(_item(mw, mat, _num(mc["width_in"]),
+                                               "wall", "wall"))
+                            break
+                    else:
+                        warnings.append(
+                            f"Wall {wid}: no wall microwave cabinet in catalog")
+                continue  # hood space above range otherwise
+            if bsku.startswith("FRIDGE-"):
+                continue  # panels + 24"-deep cab above handled at base level
+            if bsku.startswith("DISHWASHER-"):
+                wall_fill(s, s + w)
+                continue
+            continue
+        # base cabinets: mirror with wall SKUs
+        if bsku.startswith(CORNER_PREFIX[style]) and (
+                (joined_start and abs(s) < 1e-9) or
+                (joined_end and abs(s + w - L) < 1e-9)):
+            # wall corner cabinet at the corner
+            wprefix = WALL_CORNER_PREFIX[style]
+            wcorner = next((c for c in wall_cabs
+                            if str(c.get("sku", "")).startswith(wprefix)), None)
+            if wcorner:
+                ww = _num(wcorner["width_in"])
+                cs = s if abs(s) < 1e-9 else s + w - ww
+                items.append(_item(wcorner["sku"], cs, ww, "wall", "wall"))
+                rest = (s + ww, s + w) if abs(s) < 1e-9 else (s, s + w - ww)
+                if rest[1] - rest[0] > 0.05:
+                    wall_fill(*rest)
+            else:
+                warnings.append(
+                    f"Wall {wid}: no {style} wall corner cabinet in catalog; "
+                    f"used filler at corner")
+                wall_fill(s, s + w)
+            continue
+        if re.fullmatch(r"(B|SB|3DB|2DB)\d+|BTC18|BSR\d+|BMC\d+", bsku):
+            wall_fill(s, s + w)
+            continue
+        # anything else: mirror as wall fill
+        wall_fill(s, s + w)
+
+    items.sort(key=lambda i: i["at_in"])
+    return items
+
+
+# --------------------------------------------------------------------------
+# entry point
+# --------------------------------------------------------------------------
+
+def autodesign(room, catalog_items, options):
+    """Run the layout engine.
+
+    room: dict with walls [{id, length_in,
+              openings [{at_in, width_in, kind[, sill_in, height_in]}]}],
+          ceiling_in, appliances {range_in, fridge_in,
+              has_dishwasher, has_microwave}.
+          (Legacy shapes are also accepted: a flat room["openings"] list
+          with wall_id keys, and appliances {dishwasher, microwave}.)
+    catalog_items: list of dicts (sku, category, description, width_in,
+                   height_in, depth_in, price, notes).
+    options: {corner_style: "easy"|"blind"|"lazy", wall_cabinet_height: 30|36|42}.
+
+    Returns (design, warnings). design = {runs: [{wall_id, items}], version: 1}.
+    """
+    style = (options or {}).get("corner_style", "easy")
+    if style not in CORNER_TAKE:
+        style = "easy"
+    wall_h = (options or {}).get("wall_cabinet_height", 36)
+
+    cat = Catalog(catalog_items or [])
+    warnings = []
+    if not catalog_items:
+        warnings.append("Catalog is empty; no cabinets placed")
+        return {"runs": [], "version": 1}, warnings
+
+    walls = room.get("walls") or []
+    n = len(walls)
+    for i, wall in enumerate(walls):
+        wall["_joined_start"] = i > 0
+        wall["_joined_end"] = i < n - 1
+
+    runs = []
+    appl = room.get("appliances") or {}
+
+    # phase 1: fixed shell (corner cabinets + exposed-end fillers) per wall
+    # Openings: contract shape is per-wall (wall["openings"]); a legacy flat
+    # room["openings"] list with wall_id keys is also accepted.
+    states = []
+    for wall in walls:
+        wid = wall["id"]
+        per_wall = [dict(op, wall_id=wid) for op in (wall.get("openings") or [])]
+        legacy = [op for op in (room.get("openings") or [])
+                  if op.get("wall_id") == wid]
+        openings = per_wall + legacy
+        items, lo, hi = _base_shell(cat, wall, style, warnings)
+        states.append(_new_state(wall, openings, items, lo, hi))
+
+    # phase 2: appliances in wall order (fridge first to claim a run end,
+    # then sink at the window, dishwasher beside it, then the range)
+    # Appliance flags: contract shape is has_dishwasher / has_microwave;
+    # bare dishwasher / microwave keys are accepted as a fallback.
+    want_dw = appl.get("has_dishwasher", appl.get("dishwasher"))
+    want_mw = appl.get("has_microwave", appl.get("microwave"))
+    _place_fridge(cat, states, _num(appl.get("fridge_in", 36)) or 0.0,
+                  warnings)
+    _place_sinks(cat, states, warnings)
+    _place_dishwashers(cat, states, warnings, bool(want_dw))
+    _place_range(states, _num(appl.get("range_in", 30)) or 0.0, warnings)
+
+    # phase 3: tall pantry + gap fill per wall, then mirror the wall run
+    for st in states:
+        wall = st["wall"]
+        openings = st["openings"]
+        base_items, meta = _finish_base_run(cat, st, room, warnings)
+        wall_items = layout_wall_run(cat, base_items, meta, wall, openings,
+                                     style, wall_h, bool(want_mw),
+                                     warnings)
+        runs.append({"wall_id": st["id"],
+                     "items": base_items + wall_items})
+
+    # final safety: every emitted SKU must be real or an appliance placeholder
+    for run in runs:
+        for it in run["items"]:
+            sku = str(it["sku"])
+            if not cat.has(sku) and not APPLIANCE_RE.match(sku):
+                warnings.append(
+                    f"Wall {run['wall_id']}: emitted unknown SKU {sku} "
+                    f"(engine bug — please report)")
+
+    return {"runs": runs, "version": 1}, warnings
+
+fastapi==0.115.6
+uvicorn==0.32.1
+
+#!/usr/bin/env python3
+"""Generate catalogs/oppein_rta.csv — a useful subset of the Oppein RTA
+frameless Euro-style catalog (dimensions transcribed from
+~/workspace/skills/oppein-kitchen-designer/references/catalog.md).
+
+Prices are left blank (NULL) — the dealer fills them in from the price book.
+Run:  python backend/seed_oppein.py   (from the repo root)
+"""
+import csv
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+OUT = REPO / "catalogs" / "oppein_rta.csv"
+
+BASE_H, BASE_D = 30.0, 23.88     # standard base box 30"H x 23-7/8"D
+WALL_D = 12.0                     # standard wall depth
+TALL_D = 23.88                    # standard tall depth
+PANEL_T = 0.75                    # panel thickness
+
+rows = []
+
+
+def add(sku, category, description, w, h, d, price="", notes=""):
+    rows.append({
+        "sku": sku, "category": category, "description": description,
+        "width_in": w, "height_in": h, "depth_in": d,
+        "price": price, "notes": notes,
+    })
+
+
+# ---- Base cabinets: 1 drawer + door(s), 30"H x 23-7/8"D -------------------
+for w in (12, 15, 18, 21):
+    add(f"B{w}", "base", f"Base cabinet, 1 drawer + 1 door, {w}\"W",
+        w, BASE_H, BASE_D)
+add("BTC18", "base", 'Base trash cabinet 18"W (order BTC18-TRASH CAN hardware)',
+    18, BASE_H, BASE_D, notes="Includes trash can")
+for w in (24, 27, 30, 33, 36, 42):
+    add(f"B{w}", "base", f"Base cabinet, 1 drawer + 2 doors, {w}\"W",
+        w, BASE_H, BASE_D)
+
+# ---- Sink bases ------------------------------------------------------------
+for w in (30, 33, 36, 42):
+    add(f"SB{w}", "base", f"Sink base, false drawer front + 2 doors, {w}\"W",
+        w, BASE_H, BASE_D)
+
+# ---- 3-drawer bases --------------------------------------------------------
+for w in (12, 15, 18, 21, 24, 27, 30, 33, 36):
+    add(f"3DB{w}", "base", f"3-drawer base cabinet, {w}\"W", w, BASE_H, BASE_D)
+
+# ---- 2-drawer bases (deep drawers) -----------------------------------------
+for w in (30, 36):
+    add(f"2DB{w}", "base", f"2-drawer base cabinet, deep drawers, {w}\"W",
+        w, BASE_H, BASE_D, notes="PB box n/a")
+
+# ---- Base corner cabinets --------------------------------------------------
+add("BER33", "base", 'Base easy-reach corner 33"x33"', 33, BASE_H, 33,
+    notes="Needs 33\" on each wall leg")
+add("BER36", "base", 'Base easy-reach corner 36"x36"', 36, BASE_H, 36,
+    notes="Needs 36\" on each wall leg")
+add("BLS33", "base", 'Base lazy susan corner 33"x33"', 33, BASE_H, 33,
+    notes="Order BLS33 TRAY hardware")
+add("BLS36", "base", 'Base lazy susan corner 36"x36"', 36, BASE_H, 36,
+    notes="Order BLS36 TRAY hardware")
+add("BBC42", "base", 'Base blind corner 42"W', 42, BASE_H, BASE_D,
+    notes="Needs ~15\" pull from adjacent wall")
+add("BBC45", "base", 'Base blind corner 45"W', 45, BASE_H, BASE_D,
+    notes="Needs ~18\" pull from adjacent wall")
+
+# ---- Specialty bases -------------------------------------------------------
+add("BSR09", "base", 'Base spice rack 9"W x 39"H (spice rack included)',
+    9, 39, BASE_D)
+add("BMC30", "base", 'Base microwave cabinet 30"W (open shelf + drawer)',
+    30, BASE_H, BASE_D)
+
+# ---- Wall cabinets (12"D) --------------------------------------------------
+for h in (30, 36):
+    for w in (9, 12, 15, 18, 21, 24, 27, 30, 33, 36):
+        doors = "1 door" if w <= 21 else "2 doors"
+        add(f"W{w:02d}{h}", "wall",
+            f"Wall cabinet {w}\"W x {h}\"H, {doors}", w, h, WALL_D)
+add("W2442", "wall", 'Wall cabinet 24"W x 42"H, 2 doors', 24, 42, WALL_D)
+
+# ---- Wall cabinets for fridge (24"D) ---------------------------------------
+for sku, w, h in (("W301824", 30, 18), ("W361824", 36, 18)):
+    add(sku, "wall", f'Wall cabinet for fridge {w}"W x {h}"H x 24"D, 2 doors',
+        w, h, 24)
+
+# ---- Wall short cabinets ---------------------------------------------------
+for sku, w, h in (("W1212", 12, 12), ("W2412", 24, 12), ("W2418", 24, 18)):
+    add(sku, "wall", f'Wall short cabinet {w}"W x {h}"H', w, h, WALL_D)
+
+# ---- Wall corner cabinets --------------------------------------------------
+add("WER2430", "wall", 'Wall easy-reach corner 24"x24", 30"H', 24, 30, WALL_D)
+add("WER2436", "wall", 'Wall easy-reach corner 24"x24", 36"H', 24, 36, WALL_D)
+add("WBC2730", "wall", 'Wall blind corner 27"W x 30"H', 27, 30, WALL_D,
+    notes="Door pulls from one side")
+
+# ---- Wall microwave / stay lift -------------------------------------------
+add("WMC2418", "wall", 'Wall microwave cabinet 24"W x 18"H', 24, 18, WALL_D)
+add("WMC3018", "wall", 'Wall microwave cabinet 30"W x 18"H', 30, 18, WALL_D)
+add("WSL3018", "wall", 'Wall stay-lift cabinet 30"W x 18"H (BLUM stay lift)',
+    30, 18, WALL_D, notes="BLUM stay lift + hinge included; PB box n/a")
+
+# ---- Tall / pantry cabinets (23-7/8"D, height includes feet) ---------------
+for sku, w, h, doors in (
+        ("PC1884", 18, 84, "1 side door"), ("PC1890", 18, 90, "1 side door"),
+        ("PC1896", 18, 96, "1 side door"), ("PC2484", 24, 84, "2 full doors"),
+        ("PC2490", 24, 90, "2 full doors"), ("PC2496", 24, 96, "2 full doors"),
+        ("PC3084", 30, 84, "2 full doors"), ("PC3090", 30, 90, "2 full doors"),
+        ("PC3096", 30, 96, "2 full doors")):
+    add(sku, "tall", f'Pantry cabinet {w}"W x {h}"H, {doors}', w, h, TALL_D,
+        notes="Height includes feet")
+add("DOC3090", "tall", 'Double oven cabinet 30"W x 90"H (cut-out 55-1/8"H)',
+    30, 90, TALL_D, notes="Single 12\"H drawer at bottom; PB box n/a")
+
+# ---- Fillers ---------------------------------------------------------------
+for sku, w, h in (("WF330", 3, 30), ("WF336", 3, 36), ("WF342", 3, 42),
+                   ("WF636", 6, 36), ("TF396", 3, 96)):
+    add(sku, "filler", f'Filler {w}"W x {h}"H', w, h, PANEL_T)
+
+# ---- Panels / toe kick -----------------------------------------------------
+add("BEP24", "panel", 'Base end panel 24-3/4"W x 34-1/2"H', 24.75, 34.5, PANEL_T)
+add("BEP36", "panel", 'Base end panel 37-1/4"W x 34-1/2"H', 37.25, 34.5, PANEL_T)
+add("WEP1230", "panel", 'Wall end panel 12-3/4"W x 30"H', 12.75, 30, PANEL_T)
+add("WEP1236", "panel", 'Wall end panel 12-3/4"W x 36"H', 12.75, 36, PANEL_T)
+add("REF2496", "panel", 'Refrigerator end panel 24-3/4"W x 96"H',
+    24.75, 96, PANEL_T)
+add("REF3696", "panel", 'Refrigerator end panel 36"W x 96"H', 36, 96, PANEL_T)
+add("DWEP3", "panel", 'Dishwasher end panel 24-3/4"W x 34-1/2"H',
+    24.75, 34.5, PANEL_T)
+add("TK8", "panel", 'Toe kick 96"L x 4-1/2"H', 96, 4.5, 0.25)
+
+# ---- Moldings & hardware ---------------------------------------------------
+add("CM4", "accessory", "Crown molding 96\"L", 96, 4, PANEL_T,
+    notes="Shaker crown")
+add("HINGE105", "accessory", "105° soft-close hinge, 6-way adjustable",
+    3.5, 3.5, 1, notes="Standard hinge")
+
+
+def main():
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    with open(OUT, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=[
+            "sku", "category", "description", "width_in", "height_in",
+            "depth_in", "price", "notes"])
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"Wrote {len(rows)} SKUs -> {OUT}")
+
+
+if __name__ == "__main__":
+    main()
+
+#!/usr/bin/env python3
+"""Smoke test for backend/layout.py.
+
+Runs autodesign on an L-shaped room (wall A 168" with a centered 36" window,
+wall B 120" with a 36" door, 96" ceiling, 30" range, 36" fridge, dishwasher +
+microwave) against the seed Oppein catalog and asserts:
+  1. every emitted SKU is in the catalog or an appliance placeholder, and
+  2. a sink base exists in the design.
+Prints PASS on success.
+
+Run from the repo root:  python backend/test_layout.py
+"""
+import csv
+import re
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
+
+from backend.layout import autodesign, APPLIANCE_RE  # noqa: E402
+
+CATALOG_CSV = REPO / "catalogs" / "oppein_rta.csv"
+
+ROOM = {
+    "walls": [
+        {"id": "A", "length_in": 168},
+        {"id": "B", "length_in": 120},
+    ],
+    "openings": [
+        {"wall_id": "A", "at_in": 66, "width_in": 36, "kind": "window",
+         "sill_in": 42, "height_in": 36},
+        {"wall_id": "B", "at_in": 72, "width_in": 36, "kind": "door"},
+    ],
+    "ceiling_in": 96,
+    "appliances": {
+        "range_in": 30,
+        "fridge_in": 36,
+        "dishwasher": True,
+        "microwave": True,
+    },
+}
+
+OPTIONS = {"corner_style": "easy", "wall_cabinet_height": 36}
+
+
+def load_catalog():
+    with open(CATALOG_CSV, newline="", encoding="utf-8-sig") as f:
+        items = list(csv.DictReader(f))
+    for it in items:
+        for k in ("width_in", "height_in", "depth_in"):
+            it[k] = float(it[k]) if it[k] not in (None, "") else None
+        it["price"] = float(it["price"]) if it["price"] not in (None, "") else None
+    return items
+
+
+def main():
+    catalog = load_catalog()
+    catalog_skus = {it["sku"] for it in catalog}
+    assert catalog_skus, "seed catalog is empty"
+
+    design, warnings = autodesign(ROOM, catalog, OPTIONS)
+
+    assert design.get("version") == 1, "design version != 1"
+    assert len(design["runs"]) == 2, "expected 2 runs (walls A and B)"
+
+    emitted = []
+    wall_len = {w["id"]: w["length_in"] for w in ROOM["walls"]}
+    for run in design["runs"]:
+        L = wall_len[run["wall_id"]]
+        for level in ("base", "wall", "tall"):
+            prev_end = -1
+            for it in [i for i in run["items"] if i["level"] == level]:
+                for key in ("sku", "at_in", "width_in", "category", "level"):
+                    assert key in it, f"item missing {key}: {it}"
+                assert it["at_in"] >= prev_end - 1e-9, \
+                    f"overlap on wall {run['wall_id']} level {level}: {it}"
+                assert 0 - 1e-9 <= it["at_in"] \
+                    and it["at_in"] + it["width_in"] <= L + 1e-9, \
+                    f"item off wall {run['wall_id']}: {it}"
+                prev_end = it["at_in"] + it["width_in"]
+                emitted.append(it["sku"])
+
+    unknown = [s for s in emitted
+               if s not in catalog_skus and not APPLIANCE_RE.match(s)]
+    assert not unknown, f"unknown/invented SKUs emitted: {unknown}"
+
+    sink_bases = [s for s in emitted if re.fullmatch(r"SB\d+", s)]
+    assert sink_bases, "no sink base in design"
+
+    assert any(s.startswith("RANGE-") for s in emitted), "no range placeholder"
+    assert any(s.startswith("FRIDGE-") for s in emitted), "no fridge placeholder"
+    assert "DISHWASHER-24" in emitted, "no dishwasher placeholder"
+
+    print(f"walls: {[r['wall_id'] for r in design['runs']]}")
+    for run in design["runs"]:
+        n = len(run["items"])
+        skus = ", ".join(it["sku"] for it in run["items"][:12])
+        print(f"  wall {run['wall_id']}: {n} items: {skus}{'...' if n > 12 else ''}")
+    print(f"warnings ({len(warnings)}):")
+    for w in warnings:
+        print(f"  - {w}")
+    print("PASS")
+
+
+if __name__ == "__main__":
+    main()
