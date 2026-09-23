@@ -216,7 +216,7 @@ export async function render(appEl) {
     e.preventDefault();
     errBox.hidden = true;
     const name = form.querySelector('[name="name"]').value.trim();
-    const catalog_id = form.querySelector('[name="catalog_id"]').value;
+    const catalog_id = parseInt(form.querySelector('[name="catalog_id"]').value, 10);
     const { room, errors } = collectRoom(form);
 
     const all = [];
