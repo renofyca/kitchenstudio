@@ -1,0 +1,11 @@
+# Render blueprint for KitchenStudio — one-click deploy.
+# In Render: New > Blueprint > connect your repo, and this file does the rest.
+services:
+  - type: web
+    name: kitchenstudio
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
