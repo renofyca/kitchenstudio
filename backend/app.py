@@ -17,7 +17,6 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-
 from backend.layout import autodesign, APPLIANCE_RE
 
 REPO = Path(__file__).resolve().parent.parent
@@ -545,11 +544,12 @@ async def create_project(request: Request):
     except Exception:
         return _err(400, "invalid JSON body")
     name = (body.get("name") or "").strip()
-    catalog_id = body.get("catalog_id")
     room = body.get("room")
     if not name:
         return _err(400, "name is required")
-    if not isinstance(catalog_id, int):
+    try:
+        catalog_id = int(body.get("catalog_id"))
+    except (TypeError, ValueError):
         return _err(400, "catalog_id is required")
     room_err = validate_room(room)
     if room_err:
